@@ -14,14 +14,13 @@ import PIL.Image as Image
 from utils import set_plot_style, visualize_samples, plot_training_curves, Hotdog_NotHotdog
 from models import ChunkyBoy
 
-
-def train(model, optimizer, device, train_loader, val_loader, num_epochs=10):
+def train(model, optimizer, device, train_loader, test_loader, num_epochs=10):
     loss_fun = nn.BCEWithLogitsLoss()
 
     out_dict = {'train_acc': [],
-                'val_acc': [],
+                'test_acc': [],
                 'train_loss': [],
-                'val_loss': []}
+                'test_loss': []}
 
     for epoch in tqdm(range(num_epochs), unit='epoch'):
         model.train()
@@ -40,36 +39,28 @@ def train(model, optimizer, device, train_loader, val_loader, num_epochs=10):
             predicted = (torch.sigmoid(output) > 0.5).float()
             train_correct += (target == predicted).sum().cpu().item()
 
-            # Compute the training accuracy and loss
-            train_length = len(train_loader.dataset)
-            train_acc = train_correct / train_length
-            train_avg_loss = np.mean(train_loss)
-            out_dict['train_acc'].append(train_acc)
-            out_dict['train_loss'].append(train_avg_loss)
+            # compute test accuracy
+        test_loss = []
+        test_correct = 0
+        model.eval()
 
-            # Evaluate on validation set
-            model.eval()
-            val_loss = []
-            val_correct = 0
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device).float().unsqueeze(1)
             with torch.no_grad():
-                for data, target in val_loader:
-                    data, target = data.to(device), target.to(device).float().unsqueeze(1)
-                    output = model(data)
-                    loss = loss_fun(output, target)
-                    val_loss.append(loss.item())
-                    predicted = (torch.sigmoid(output) > 0.5).float()
-                    val_correct += (target == predicted).sum().cpu().item()
-
-                val_length = len(val_loader.dataset)
-                val_acc = val_correct / val_length
-                val_avg_loss = np.mean(val_loss)
-                out_dict['val_acc'].append(val_acc)
-                out_dict['val_loss'].append(val_avg_loss)
-
-                print(f"Epoch {epoch + 1}/{num_epochs} - "
-                      f"Loss train: {train_avg_loss:.3f}\t Val loss: {val_avg_loss:.3f}\t"
-                      f"Accuracy train: {train_acc * 100:.1f}%\t Val: {val_acc * 100:.1f}%")
+                output = model(data)
+            test_loss.append(loss_fun(output, target).cpu().item())
+            predicted = (torch.sigmoid(output) > 0.5).float()
+            test_correct += (predicted == target).sum().cpu().item()
+        out_dict['train_acc'].append(train_correct / len(train_loader.dataset))
+        out_dict['test_acc'].append(test_correct / len(test_loader.dataset))
+        out_dict['train_loss'].append(np.mean(train_loss))
+        out_dict['test_loss'].append(np.mean(test_loss))
+        print(f"Epoch {epoch + 1}/{num_epochs} - "
+                  f"Loss train: {np.mean(train_loss):.3f}\t test: {np.mean(test_loss):.3f}\t"
+                  f"Accuracy train: {out_dict['train_acc'][-1] * 100:.1f}%\t "
+                  f"test: {out_dict['test_acc'][-1] * 100:.1f}%")
     return out_dict
+
 
 def main():
     set_plot_style()
@@ -110,8 +101,12 @@ def main():
     # Model setup
     cnn_model = ChunkyBoy().to(device)
 
-    optimizer = torch.optim.SGD(cnn_model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(cnn_model.parameters(), lr=0.001)
 
     print('Training the Chunky Model')
-    nn_out_dict = train(cnn_model, optimizer, device, train_loader, test_loader, num_epochs=2)
+    nn_out_dict = train(cnn_model, optimizer, device, train_loader, test_loader, num_epochs=10)
     plot_training_curves(nn_out_dict)
+
+
+if __name__ == '__main__':
+    main()

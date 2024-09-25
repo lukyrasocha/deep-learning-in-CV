@@ -68,7 +68,12 @@ def plot_training_curves(nn_out):
     # Plot Loss
     plt.subplot(2, 1, 1)
     plt.plot(epoch_range, nn_out['train_loss'], label='NN Train Loss', color=color_primary, linestyle='-')
-    plt.plot(epoch_range, nn_out['val_loss'], label='NN Val Loss', color=color_primary, linestyle='--')
+    if 'val_loss' in nn_out:
+        plt.plot(epoch_range, nn_out['val_loss'], label='NN Val Loss', color=color_primary, linestyle='--')
+        plt.title('Training and Validation Loss', fontsize=16, color=color_accent)
+    else:
+        plt.plot(epoch_range, nn_out['test_loss'], label='NN Test Loss', color=color_primary, linestyle='--')
+        plt.title('Training and Test Loss', fontsize=16, color=color_accent)
     plt.title('Training and Validation Loss', fontsize=16, color=color_accent)
     plt.xlabel('Epoch', fontsize=14)
     plt.ylabel('Loss', fontsize=14)
@@ -79,8 +84,16 @@ def plot_training_curves(nn_out):
     plt.subplot(2, 1, 2)
     plt.plot(epoch_range, [acc * 100 for acc in nn_out['train_acc']],
              label='NN Train Acc', color=color_secondary, linestyle='-')
-    plt.plot(epoch_range, [acc * 100 for acc in nn_out['val_acc']],
-             label='NN Val Acc', color=color_secondary, linestyle='--')
+    if 'val_acc' in nn_out:
+        plt.plot(epoch_range, [acc * 100 for acc in nn_out['val_acc']],
+                 label='NN Val Acc', color=color_secondary, linestyle='--')
+        plt.title('Training and Validation Accuracy', fontsize=16, color=color_accent)
+    else:
+        plt.plot(epoch_range, [acc * 100 for acc in nn_out['test_acc']],
+                 label='NN Test Acc', color=color_secondary, linestyle='--')
+        plt.title('Training and Validation Accuracy', fontsize=16, color=color_accent)
+    #plt.plot(epoch_range, [acc * 100 for acc in nn_out['val_acc']],
+    #         label='NN Val Acc', color=color_secondary, linestyle='--')
     plt.title('Training and Validation Accuracy', fontsize=16, color=color_accent)
     plt.xlabel('Epoch', fontsize=14)
     plt.ylabel('Accuracy (%)', fontsize=14)

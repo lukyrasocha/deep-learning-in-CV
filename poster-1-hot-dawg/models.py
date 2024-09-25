@@ -24,7 +24,6 @@ class SimpleNN(nn.Module):
         x = self.fc3(x)
         return x
 
-
 class ChunkyBoy(nn.Module):
     def __init__(self):
         super(ChunkyBoy, self).__init__()
