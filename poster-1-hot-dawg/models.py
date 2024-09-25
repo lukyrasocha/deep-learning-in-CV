@@ -46,6 +46,7 @@ class ChunkyBoy(nn.Module):
             nn.Linear(500, 1)
         )
 
+
     def forward(self, x):
         x = self.convolutional(x)
         x = x.view(x.size(0), -1)
