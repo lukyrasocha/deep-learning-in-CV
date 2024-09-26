@@ -20,6 +20,7 @@ def train(model, optimizer, device, train_loader, val_loader, num_epochs=10):
     for epoch in tqdm(range(num_epochs), unit='epoch'):
         model.train()
         train_correct = 0
+        train_incorrect = 0
         train_loss = []
         for minibatch_no, (data, target) in tqdm(enumerate(train_loader), total=len(train_loader), leave=False):
 
@@ -33,6 +34,7 @@ def train(model, optimizer, device, train_loader, val_loader, num_epochs=10):
             train_loss.append(loss.item())
             predicted = (torch.sigmoid(output) > 0.5).float()
             train_correct += (target == predicted).sum().cpu().item()
+            train_incorrect += (target != predicted).sum().cpu().item()
 
         # Compute the training accuracy and loss
         train_length = len(train_loader.dataset)
@@ -116,7 +118,7 @@ def main():
     nn_optimizer = torch.optim.Adam(nn_model.parameters(), lr=0.0001)
 
     print("Training Baseline Model:")
-    nn_out_dict = train(nn_model, nn_optimizer, device, train_loader, val_loader, num_epochs=60)
+    nn_out_dict = train(nn_model, nn_optimizer, device, train_loader, val_loader, num_epochs=2)
 
     plot_training_curves(nn_out_dict)
 
