@@ -6,7 +6,8 @@ Project 2:
 
 ### Intro
 
-- [ ] Create a todo for the whole project
+- [x] Create a todo for the whole project
+- [ ] ANother todo
 
 
 
