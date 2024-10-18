@@ -1,16 +1,11 @@
-# 02516-intro-to-dl-in-cv
+# Introduction to Deep Learning in Computer Vision
 
-Project 1:
+This repository contains the code for all the projects done as part of the course 02516 Introduction to Deep Learning in Computer Vision at DTU
 
-Project 2:
+[**Project 1:**](https://github.com/lukyrasocha/02516-intro-to-dl-in-cv/tree/main/poster-1-hot-dawg) Image classification of hot dogs
 
-### Intro
+[**Project 2:**](https://github.com/lukyrasocha/02516-intro-to-dl-in-cv/tree/main/poster-2-segmentation) Image segmentation of retinal images and skin lesions
 
-- [x] Create a todo for the whole project
-- [ ] ANother todo
+**Project 3:**
 
-
-
-Project 3:
-
-Project 4:
+**Project 4:**
