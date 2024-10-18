@@ -47,7 +47,7 @@ pip install -r requirements.txt
 
 ## Running the code :rocket:
 
-To run the code, you can use the following command:
+To run the code, run the following:
 
 ```bash
 python main.py
@@ -55,7 +55,7 @@ python main.py
 
 ## Project Structure :file_folder:
 
-The project structure is as follows:
+The project structure:
 
 ```
 .
