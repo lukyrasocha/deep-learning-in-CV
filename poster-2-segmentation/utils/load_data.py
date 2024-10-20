@@ -55,6 +55,9 @@ class PH2Dataset(Dataset):
             image = self.transform(image)
             mask = self.transform(mask)
 
+        # Binarize the mask (convert to 0s and 1s)
+        mask = (mask > 0).float()  
+
         return image, mask
 
 class DRIVEDataset(Dataset):
@@ -103,6 +106,8 @@ class DRIVEDataset(Dataset):
         if self.transform:
             image = self.transform(image)
             mask = self.transform(mask)
+
+        mask = (mask > 0).float()  
 
         return image, mask
 
