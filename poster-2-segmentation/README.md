@@ -73,14 +73,16 @@ The project structure:
 
 ```
 .
-├── utils
-│   ├── load_data.py
-│   ├── metrics.py
-│   ├── logger.py
-
-├── models
-│   ├── unet.py
-│   ├── encoder_decoder.py
-
+├── README.md
+├── figures
 ├── main.py
+├── models
+│   ├── losses.py
+│   ├── models.py
+│   └── train.py
+├── requirements.txt
+├── utils
+│   ├── load_data.py
+│   ├── logger.py
+│   └── visualize.py
 ```
