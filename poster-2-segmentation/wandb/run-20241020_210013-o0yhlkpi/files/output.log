@@ -1,0 +1,45 @@
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m1[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.7004[0m, Validation Loss: [1;36m0.6872[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m2[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.5916[0m, Validation Loss: [1;36m0.5259[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m3[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.6166[0m, Validation Loss: [1;36m0.6161[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m4[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.5079[0m, Validation Loss: [1;36m0.5015[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m5[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4741[0m, Validation Loss: [1;36m0.3586[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m6[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.3959[0m, Validation Loss: [1;36m0.3407[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m7[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.3274[0m, Validation Loss: [1;36m0.3393[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m8[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.3122[0m, Validation Loss: [1;36m0.2546[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m9[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2673[0m, Validation Loss: [1;36m0.2583[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m10[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2801[0m, Validation Loss: [1;36m0.2487[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m11[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2366[0m, Validation Loss: [1;36m0.2741[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m12[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2615[0m, Validation Loss: [1;36m0.2410[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m13[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2499[0m, Validation Loss: [1;36m0.2676[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m14[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2168[0m, Validation Loss: [1;36m0.2024[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m15[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2037[0m, Validation Loss: [1;36m0.2126[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m16[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2149[0m, Validation Loss: [1;36m0.1910[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m17[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.1952[0m, Validation Loss: [1;36m0.1949[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m18[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.1879[0m, Validation Loss: [1;36m0.1766[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m19[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.1813[0m, Validation Loss: [1;36m0.1859[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m20[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.2022[0m, Validation Loss: [1;36m0.2312[0m
+✅ [1;32mSUCCESS[0m: Training completed.
+✅ [1;32mSUCCESS[0m: Saved examples of predictions for Enc-Dec of PH2 to [32m'figures'[0m
+🔧 [1;32mWORKING ON[0m: Training simple Encoder-Decoder on DRIVE
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m1[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.6707[0m, Validation Loss: [1;36m0.5295[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m2[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.6470[0m, Validation Loss: [1;36m0.6206[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m3[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.5570[0m, Validation Loss: [1;36m0.4644[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m4[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4682[0m, Validation Loss: [1;36m0.4559[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m5[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4506[0m, Validation Loss: [1;36m0.4410[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m6[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4404[0m, Validation Loss: [1;36m0.4354[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m7[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4363[0m, Validation Loss: [1;36m0.4294[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m8[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4316[0m, Validation Loss: [1;36m0.4243[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m9[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4264[0m, Validation Loss: [1;36m0.4211[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m10[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4206[0m, Validation Loss: [1;36m0.4130[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m11[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4194[0m, Validation Loss: [1;36m0.4191[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m12[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4224[0m, Validation Loss: [1;36m0.4186[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m13[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4174[0m, Validation Loss: [1;36m0.4115[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m14[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4157[0m, Validation Loss: [1;36m0.4141[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m15[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4129[0m, Validation Loss: [1;36m0.4148[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m16[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4215[0m, Validation Loss: [1;36m0.4181[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m17[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4205[0m, Validation Loss: [1;36m0.4099[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m18[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4186[0m, Validation Loss: [1;36m0.4082[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m19[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4167[0m, Validation Loss: [1;36m0.4097[0m
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m20[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.4147[0m, Validation Loss: [1;36m0.4088[0m
+✅ [1;32mSUCCESS[0m: Training completed.
+✅ [1;32mSUCCESS[0m: Saved examples of predictions for Enc-Dec of DRIVE to [32m'figures'[0m
