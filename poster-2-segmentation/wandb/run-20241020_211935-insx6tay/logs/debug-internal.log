@@ -1,0 +1,17 @@
+{"time":"2024-10-20T21:19:35.49302423+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-20T21:19:35.493034669+02:00","level":"INFO","msg":"created symlink","path":"/zhome/e3/f/203690/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241020_211935-insx6tay/logs/debug-core.log"}
+{"time":"2024-10-20T21:19:35.605729969+02:00","level":"INFO","msg":"created new stream","id":"insx6tay"}
+{"time":"2024-10-20T21:19:35.605766622+02:00","level":"INFO","msg":"stream: started","id":"insx6tay"}
+{"time":"2024-10-20T21:19:35.605793649+02:00","level":"INFO","msg":"sender: started","stream_id":"insx6tay"}
+{"time":"2024-10-20T21:19:35.605784236+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"insx6tay"}}
+{"time":"2024-10-20T21:19:35.605776437+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"insx6tay"}}
+{"time":"2024-10-20T21:19:35.864743806+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-20T21:19:42.899342233+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-20T21:19:42.899868106+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-20T21:19:43.66910604+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-20T21:19:43.865695499+02:00","level":"INFO","msg":"handler: operation stats","stats":{}}
+{"time":"2024-10-20T21:19:44.881627895+02:00","level":"INFO","msg":"stream: closing","id":"insx6tay"}
+{"time":"2024-10-20T21:19:44.881811922+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"insx6tay"}}
+{"time":"2024-10-20T21:19:44.881822132+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"insx6tay"}}
+{"time":"2024-10-20T21:19:44.881827428+02:00","level":"INFO","msg":"sender: closed","stream_id":"insx6tay"}
+{"time":"2024-10-20T21:19:44.882988392+02:00","level":"INFO","msg":"stream: closed","id":"insx6tay"}

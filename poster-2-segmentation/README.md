@@ -45,6 +45,20 @@ cd 02516-intro-to-dl-in-cv/poster-2-segmentation
 pip install -r requirements.txt
 ```
 
+## Setup WanDB 🟡
+
+1. Create an account in [wandb](https://docs.wandb.ai/quickstart/?_gl=1*18kvjf*_ga*MjA0MDY3MTE0NS4xNzI5NDQ4OTMy*_ga_JH1SJHJQXJ*MTcyOTQ0ODkzMS4xLjAuMTcyOTQ0ODkzMi41OS4wLjA.*_ga_GMYDGNGKDT*MTcyOTQ0ODkzMS4xLjAuMTcyOTQ0ODkzMS4wLjAuMA..*_gcl_au*NjI2NjY5MjE4LjE3Mjk0NDg5MzI.)
+
+2. I will invite you to our project
+
+3. Next, get your `WANDB_API_KEY`
+
+4. In HPC run `wandb login`
+
+5. It will ask you for your `WANDB_API_KEY`, paste it there and then you are successfully logged in and you can run `python main.py`
+
+6. Check the runs in Wandb
+
 ## Running the code :rocket:
 
 To run the code, run the following:
