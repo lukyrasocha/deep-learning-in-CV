@@ -31,7 +31,7 @@ python -m venv ~/venv/project2_venv
 **3. Activate the virtual environment**
 
 ```bash
-source ~/venv2/project2_venv/bin/activate
+source ~/venv/project2_venv/bin/activate
 ```
 
 **4. Change directories**
