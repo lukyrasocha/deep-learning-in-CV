@@ -1,0 +1,17 @@
+{"time":"2024-10-22T15:26:40.20341964+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-22T15:26:40.203433727+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241022_152640-93ipsnk7/logs/debug-core.log"}
+{"time":"2024-10-22T15:26:40.316274877+02:00","level":"INFO","msg":"created new stream","id":"93ipsnk7"}
+{"time":"2024-10-22T15:26:40.316325463+02:00","level":"INFO","msg":"stream: started","id":"93ipsnk7"}
+{"time":"2024-10-22T15:26:40.316353789+02:00","level":"INFO","msg":"sender: started","stream_id":"93ipsnk7"}
+{"time":"2024-10-22T15:26:40.316349092+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"93ipsnk7"}}
+{"time":"2024-10-22T15:26:40.316346866+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"93ipsnk7"}}
+{"time":"2024-10-22T15:26:40.658405805+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T15:27:15.633506417+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T15:27:15.634007342+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T15:27:16.633941458+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"saving job artifact","runtime_seconds":0.653962225}],"total_operations":1}}
+{"time":"2024-10-22T15:27:16.743298666+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-22T15:27:17.978343013+02:00","level":"INFO","msg":"stream: closing","id":"93ipsnk7"}
+{"time":"2024-10-22T15:27:17.978660925+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"93ipsnk7"}}
+{"time":"2024-10-22T15:27:17.978679363+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"93ipsnk7"}}
+{"time":"2024-10-22T15:27:17.978688467+02:00","level":"INFO","msg":"sender: closed","stream_id":"93ipsnk7"}
+{"time":"2024-10-22T15:27:17.981868887+02:00","level":"INFO","msg":"stream: closed","id":"93ipsnk7"}

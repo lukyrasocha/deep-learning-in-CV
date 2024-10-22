@@ -1,0 +1,17 @@
+{"time":"2024-10-22T13:06:59.466898712+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-22T13:06:59.466915159+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241022_130659-elcj08mq/logs/debug-core.log"}
+{"time":"2024-10-22T13:06:59.578847841+02:00","level":"INFO","msg":"created new stream","id":"elcj08mq"}
+{"time":"2024-10-22T13:06:59.578899087+02:00","level":"INFO","msg":"stream: started","id":"elcj08mq"}
+{"time":"2024-10-22T13:06:59.578942967+02:00","level":"INFO","msg":"sender: started","stream_id":"elcj08mq"}
+{"time":"2024-10-22T13:06:59.57895321+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"elcj08mq"}}
+{"time":"2024-10-22T13:06:59.578927976+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"elcj08mq"}}
+{"time":"2024-10-22T13:06:59.892277742+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T13:07:35.699462767+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T13:07:35.700188886+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T13:07:36.697481247+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-22T13:07:36.700015484+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.00232801}],"total_operations":1}}
+{"time":"2024-10-22T13:07:37.948135862+02:00","level":"INFO","msg":"stream: closing","id":"elcj08mq"}
+{"time":"2024-10-22T13:07:37.948710768+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"elcj08mq"}}
+{"time":"2024-10-22T13:07:37.948729279+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"elcj08mq"}}
+{"time":"2024-10-22T13:07:37.948738852+02:00","level":"INFO","msg":"sender: closed","stream_id":"elcj08mq"}
+{"time":"2024-10-22T13:07:37.950116809+02:00","level":"INFO","msg":"stream: closed","id":"elcj08mq"}

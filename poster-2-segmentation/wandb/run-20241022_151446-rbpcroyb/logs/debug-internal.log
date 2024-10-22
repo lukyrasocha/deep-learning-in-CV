@@ -1,0 +1,17 @@
+{"time":"2024-10-22T15:14:46.447751838+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-22T15:14:46.447763427+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241022_151446-rbpcroyb/logs/debug-core.log"}
+{"time":"2024-10-22T15:14:46.562111059+02:00","level":"INFO","msg":"created new stream","id":"rbpcroyb"}
+{"time":"2024-10-22T15:14:46.562149578+02:00","level":"INFO","msg":"stream: started","id":"rbpcroyb"}
+{"time":"2024-10-22T15:14:46.562161906+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"rbpcroyb"}}
+{"time":"2024-10-22T15:14:46.562178831+02:00","level":"INFO","msg":"sender: started","stream_id":"rbpcroyb"}
+{"time":"2024-10-22T15:14:46.56218066+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"rbpcroyb"}}
+{"time":"2024-10-22T15:14:46.882676578+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T15:15:26.440916633+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T15:15:26.441603102+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T15:15:27.327838318+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-22T15:15:27.44141197+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.11345703}],"total_operations":1}}
+{"time":"2024-10-22T15:15:28.561297792+02:00","level":"INFO","msg":"stream: closing","id":"rbpcroyb"}
+{"time":"2024-10-22T15:15:28.561472211+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"rbpcroyb"}}
+{"time":"2024-10-22T15:15:28.56150397+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"rbpcroyb"}}
+{"time":"2024-10-22T15:15:28.561522486+02:00","level":"INFO","msg":"sender: closed","stream_id":"rbpcroyb"}
+{"time":"2024-10-22T15:15:28.562699974+02:00","level":"INFO","msg":"stream: closed","id":"rbpcroyb"}
