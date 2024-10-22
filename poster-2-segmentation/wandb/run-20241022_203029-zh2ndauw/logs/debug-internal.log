@@ -1,0 +1,16 @@
+{"time":"2024-10-22T20:30:29.764424246+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-22T20:30:29.764434307+02:00","level":"INFO","msg":"created symlink","path":"/zhome/20/1/209339/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241022_203029-zh2ndauw/logs/debug-core.log"}
+{"time":"2024-10-22T20:30:29.874004316+02:00","level":"INFO","msg":"created new stream","id":"zh2ndauw"}
+{"time":"2024-10-22T20:30:29.874037791+02:00","level":"INFO","msg":"stream: started","id":"zh2ndauw"}
+{"time":"2024-10-22T20:30:29.87404658+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"zh2ndauw"}}
+{"time":"2024-10-22T20:30:29.874057322+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"zh2ndauw"}}
+{"time":"2024-10-22T20:30:29.87408453+02:00","level":"INFO","msg":"sender: started","stream_id":"zh2ndauw"}
+{"time":"2024-10-22T20:30:30.197800261+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T20:30:34.030049026+02:00","level":"INFO","msg":"stream: closing","id":"zh2ndauw"}
+{"time":"2024-10-22T20:30:34.030117696+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T20:30:34.03057876+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T20:30:36.209398135+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-22T20:30:36.41865178+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"zh2ndauw"}}
+{"time":"2024-10-22T20:30:36.418705533+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"zh2ndauw"}}
+{"time":"2024-10-22T20:30:36.418727198+02:00","level":"INFO","msg":"sender: closed","stream_id":"zh2ndauw"}
+{"time":"2024-10-22T20:30:36.419608319+02:00","level":"INFO","msg":"stream: closed","id":"zh2ndauw"}
