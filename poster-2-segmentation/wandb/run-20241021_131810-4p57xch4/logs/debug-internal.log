@@ -1,0 +1,11 @@
+{"time":"2024-10-21T13:18:10.06264486+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-21T13:18:10.062660594+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241021_131810-4p57xch4/logs/debug-core.log"}
+{"time":"2024-10-21T13:18:10.176261188+02:00","level":"INFO","msg":"created new stream","id":"4p57xch4"}
+{"time":"2024-10-21T13:18:10.176295696+02:00","level":"INFO","msg":"stream: started","id":"4p57xch4"}
+{"time":"2024-10-21T13:18:10.17640621+02:00","level":"INFO","msg":"sender: started","stream_id":"4p57xch4"}
+{"time":"2024-10-21T13:18:10.176350814+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"4p57xch4"}}
+{"time":"2024-10-21T13:18:10.176364453+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"4p57xch4"}}
+{"time":"2024-10-21T13:18:10.563259208+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-21T13:27:25.86822445+02:00","level":"INFO","msg":"api: retrying HTTP error","status":429,"url":"https://api.wandb.ai/graphql"}
+{"time":"2024-10-21T13:27:26.610000098+02:00","level":"ERROR","msg":"HTTP error","status":404,"method":"POST","url":"https://api.wandb.ai/files/petrboska-dtu/project2-segmentation/4p57xch4/file_stream"}
+{"time":"2024-10-21T13:27:26.610046209+02:00","level":"ERROR+4","msg":"filestream: fatal error: filestream: failed to upload: 404 Not Found path=files/petrboska-dtu/project2-segmentation/4p57xch4/file_stream: {\"error\":\"entity petrboska-dtu not found while streaming file\"}"}

@@ -1,0 +1,17 @@
+{"time":"2024-10-22T15:03:59.026461631+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-22T15:03:59.026473634+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241022_150358-sbo2hhl9/logs/debug-core.log"}
+{"time":"2024-10-22T15:03:59.138587738+02:00","level":"INFO","msg":"created new stream","id":"sbo2hhl9"}
+{"time":"2024-10-22T15:03:59.1386354+02:00","level":"INFO","msg":"stream: started","id":"sbo2hhl9"}
+{"time":"2024-10-22T15:03:59.138674247+02:00","level":"INFO","msg":"sender: started","stream_id":"sbo2hhl9"}
+{"time":"2024-10-22T15:03:59.138668764+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"sbo2hhl9"}}
+{"time":"2024-10-22T15:03:59.138735071+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"sbo2hhl9"}}
+{"time":"2024-10-22T15:03:59.421143104+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-22T15:04:34.602301274+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-22T15:04:34.602912492+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-22T15:04:35.6027621+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"saving job artifact","runtime_seconds":0.694200274}],"total_operations":1}}
+{"time":"2024-10-22T15:04:35.678509052+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-22T15:04:36.909271173+02:00","level":"INFO","msg":"stream: closing","id":"sbo2hhl9"}
+{"time":"2024-10-22T15:04:36.909422259+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"sbo2hhl9"}}
+{"time":"2024-10-22T15:04:36.909438951+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"sbo2hhl9"}}
+{"time":"2024-10-22T15:04:36.909455775+02:00","level":"INFO","msg":"sender: closed","stream_id":"sbo2hhl9"}
+{"time":"2024-10-22T15:04:36.910548643+02:00","level":"INFO","msg":"stream: closed","id":"sbo2hhl9"}
