@@ -1,0 +1,31 @@
+ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m1[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.6865[0m, Validation Loss: [1;36m0.6344[0m
+Traceback (most recent call last):
+  File "/zhome/20/1/209339/02516-intro-to-dl-in-cv/poster-2-segmentation/main.py", line 99, in <module>
+    train_model(encdec_ph2_model, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
+  File "/zhome/20/1/209339/02516-intro-to-dl-in-cv/poster-2-segmentation/models/train.py", line 18, in train_model
+    for images, masks in train_loader:
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torch/utils/data/dataloader.py", line 701, in __next__
+    data = self._next_data()
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torch/utils/data/dataloader.py", line 757, in _next_data
+    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 52, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torch/utils/data/_utils/fetch.py", line 52, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+  File "/zhome/20/1/209339/02516-intro-to-dl-in-cv/poster-2-segmentation/utils/load_data.py", line 55, in __getitem__
+    image = self.transform(image)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torchvision/transforms/transforms.py", line 95, in __call__
+    img = t(img)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torchvision/transforms/transforms.py", line 354, in forward
+    return F.resize(img, self.size, self.interpolation, self.max_size, self.antialias)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torchvision/transforms/functional.py", line 477, in resize
+    return F_pil.resize(img, size=output_size, interpolation=pil_interpolation)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/torchvision/transforms/_functional_pil.py", line 250, in resize
+    return img.resize(tuple(size[::-1]), interpolation)
+  File "/zhome/20/1/209339/venv/project2_venv/lib64/python3.9/site-packages/PIL/Image.py", line 2365, in resize
+    return self._new(self.im.resize(size, resample, box))
+KeyboardInterrupt
