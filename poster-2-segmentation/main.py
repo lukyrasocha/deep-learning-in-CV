@@ -9,6 +9,10 @@ from utils.visualize import display_random_images_and_masks, visualize_predictio
 from models.train import train_model
 from models.models import EncDec
 from models.losses import bce_loss
+from models.models import DoubleConv, DownSample, UpSample, UNet
+
+
+
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
 logger.info(f"Running on {DEVICE}")
@@ -121,6 +125,59 @@ logger.success("Saved examples of predictions for Enc-Dec of DRIVE to 'figures'"
   
 
 # U-Net
+print("*" * 100)
+print("Training UNet now!")
+print("*" * 100)
+
+# Simple Encoder-Decoder on UNet
+
+LEARNING_RATE = 0.001
+MAX_EPOCHS = 20
+loss_fn = bce_loss
+
+UNetModel = UNet(in_channels=3, num_classes=1)
+optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
+
+
+#This is config used for WANDB
+config= {
+    "learning_rate": LEARNING_RATE,
+    "architecture": "UNet",
+    "dataset": "PH2",
+    "epochs": MAX_EPOCHS,
+    "loss_fn": "BinaryCrossEntropy",
+    "optimizer": "Adam"
+}
+
+
+logger.working_on("Training simple UNet on PH2")
+train_model(UNetModel, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
+visualize_predictions(UNetModel, ph2_train_loader, DEVICE, figname="UNet_predictions.png", num_images=3)
+logger.success("Saved examples of predictions for UNet to 'figures'")
+
+# Simple UNet on DRIVE
+LEARNING_RATE = 0.001
+MAX_EPOCHS = 20
+loss_fn = bce_loss
+
+UNetModel = UNet(in_channels=3, num_classes=1)
+optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
+
+# This config is used for WANDB
+config= {
+    "learning_rate": LEARNING_RATE,
+    "architecture": "UNet",
+    "dataset": "DRIVE",
+    "epochs": MAX_EPOCHS,
+    "loss_fn": "BinaryCrossEntropy",
+    "optimizer": "Adam"
+}
+
+logger.working_on("Training simple UNet on DRIVE")
+train_model(UNetModel, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
+visualize_predictions(encdec_drive_model, drive_train_loader, DEVICE, figname="drive_predictions_UNet.png", num_images=3)
+logger.success("Saved examples of predictions for Enc-Dec of DRIVE to 'figures'")
+
 
 # Evaluation
 
