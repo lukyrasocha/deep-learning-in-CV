@@ -8,6 +8,8 @@ First login to the HPC
 
 **0. SSH setup**
 
+> NOTE: YOU NEED TO RUN THIS SSH SETUP EVERYTIME YOU LOG IN INTO THE HPC
+
 ```bash
 eval "$(ssh-agent -s)"
 
