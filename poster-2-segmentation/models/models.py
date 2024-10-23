@@ -130,7 +130,9 @@ class UNet(nn.Module):
         up_3 = self.up_convolution_3(up_2, down_2)
         up_4 = self.up_convolution_4(up_3, down_1)
 
+
         out = self.out(up_4)
+
         return out
 
 
