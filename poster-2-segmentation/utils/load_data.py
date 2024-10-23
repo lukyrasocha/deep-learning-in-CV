@@ -9,7 +9,7 @@ from torchvision import transforms
 class PH2Dataset(Dataset):
     def __init__(self, split='train', transform=None, data_path='/dtu/datasets1/02516/PH2_Dataset_images', augment =False, artificial_data=False, num_artificial_samples=0):
         self.transform = transform
-        self.augment = augment # in memory augmentation if True
+        self.augment = augment # in memory augmentation if True 
         self.artificial_data = artificial_data
         self.num_artificial_samples = num_artificial_samples
         self.image_paths = []
