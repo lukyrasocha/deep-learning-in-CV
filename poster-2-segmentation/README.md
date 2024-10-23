@@ -8,6 +8,8 @@ First login to the HPC
 
 **0. SSH setup**
 
+> NOTE: YOU NEED TO RUN THIS SSH SETUP EVERYTIME YOU LOG IN INTO THE HPC
+
 ```bash
 eval "$(ssh-agent -s)"
 
@@ -31,7 +33,7 @@ python -m venv ~/venv/project2_venv
 **3. Activate the virtual environment**
 
 ```bash
-source ~/venv2/project2_venv/bin/activate
+source ~/venv/project2_venv/bin/activate
 ```
 
 **4. Change directories**
@@ -73,14 +75,16 @@ The project structure:
 
 ```
 .
-├── utils
-│   ├── load_data.py
-│   ├── metrics.py
-│   ├── logger.py
-
-├── models
-│   ├── unet.py
-│   ├── encoder_decoder.py
-
+├── README.md
+├── figures
 ├── main.py
+├── models
+│   ├── losses.py
+│   ├── models.py
+│   └── train.py
+├── requirements.txt
+├── utils
+│   ├── load_data.py
+│   ├── logger.py
+│   └── visualize.py
 ```
