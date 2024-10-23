@@ -1,0 +1,16 @@
+{"time":"2024-10-23T14:31:43.57455567+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T14:31:43.574575547+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_143143-gew53gmt/logs/debug-core.log"}
+{"time":"2024-10-23T14:31:43.686140504+02:00","level":"INFO","msg":"created new stream","id":"gew53gmt"}
+{"time":"2024-10-23T14:31:43.686181373+02:00","level":"INFO","msg":"stream: started","id":"gew53gmt"}
+{"time":"2024-10-23T14:31:43.686239539+02:00","level":"INFO","msg":"sender: started","stream_id":"gew53gmt"}
+{"time":"2024-10-23T14:31:43.686222324+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"gew53gmt"}}
+{"time":"2024-10-23T14:31:43.686240023+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"gew53gmt"}}
+{"time":"2024-10-23T14:31:43.985838816+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T14:31:44.685412602+02:00","level":"INFO","msg":"stream: closing","id":"gew53gmt"}
+{"time":"2024-10-23T14:31:44.685536848+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T14:31:44.686084758+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T14:31:45.397726045+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T14:31:45.599033654+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"gew53gmt"}}
+{"time":"2024-10-23T14:31:45.599074309+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"gew53gmt"}}
+{"time":"2024-10-23T14:31:45.599087429+02:00","level":"INFO","msg":"sender: closed","stream_id":"gew53gmt"}
+{"time":"2024-10-23T14:31:45.60048148+02:00","level":"INFO","msg":"stream: closed","id":"gew53gmt"}

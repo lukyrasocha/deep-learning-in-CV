@@ -1,0 +1,16 @@
+{"time":"2024-10-23T14:06:26.374083955+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T14:06:26.374098928+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_140626-w465q9hv/logs/debug-core.log"}
+{"time":"2024-10-23T14:06:26.486514886+02:00","level":"INFO","msg":"created new stream","id":"w465q9hv"}
+{"time":"2024-10-23T14:06:26.486561063+02:00","level":"INFO","msg":"stream: started","id":"w465q9hv"}
+{"time":"2024-10-23T14:06:26.486618641+02:00","level":"INFO","msg":"sender: started","stream_id":"w465q9hv"}
+{"time":"2024-10-23T14:06:26.486600437+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"w465q9hv"}}
+{"time":"2024-10-23T14:06:26.486581623+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"w465q9hv"}}
+{"time":"2024-10-23T14:06:27.026386853+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T14:06:28.188437041+02:00","level":"INFO","msg":"stream: closing","id":"w465q9hv"}
+{"time":"2024-10-23T14:06:28.188547075+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T14:06:28.189703342+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T14:06:31.068540985+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T14:06:31.272855135+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"w465q9hv"}}
+{"time":"2024-10-23T14:06:31.272901881+02:00","level":"INFO","msg":"sender: closed","stream_id":"w465q9hv"}
+{"time":"2024-10-23T14:06:31.272897042+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"w465q9hv"}}
+{"time":"2024-10-23T14:06:31.27417226+02:00","level":"INFO","msg":"stream: closed","id":"w465q9hv"}

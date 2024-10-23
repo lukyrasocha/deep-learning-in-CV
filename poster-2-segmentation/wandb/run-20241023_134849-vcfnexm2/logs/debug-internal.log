@@ -1,0 +1,17 @@
+{"time":"2024-10-23T13:48:49.710286046+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T13:48:49.710307578+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_134849-vcfnexm2/logs/debug-core.log"}
+{"time":"2024-10-23T13:48:49.826871387+02:00","level":"INFO","msg":"created new stream","id":"vcfnexm2"}
+{"time":"2024-10-23T13:48:49.827060916+02:00","level":"INFO","msg":"stream: started","id":"vcfnexm2"}
+{"time":"2024-10-23T13:48:49.827109511+02:00","level":"INFO","msg":"sender: started","stream_id":"vcfnexm2"}
+{"time":"2024-10-23T13:48:49.827091737+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"vcfnexm2"}}
+{"time":"2024-10-23T13:48:49.827077467+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"vcfnexm2"}}
+{"time":"2024-10-23T13:48:50.117656295+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T13:49:36.069128432+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T13:49:36.06994915+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T13:49:37.01844131+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T13:49:37.06975382+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.051178421}],"total_operations":1}}
+{"time":"2024-10-23T13:49:38.258299492+02:00","level":"INFO","msg":"stream: closing","id":"vcfnexm2"}
+{"time":"2024-10-23T13:49:38.258489345+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"vcfnexm2"}}
+{"time":"2024-10-23T13:49:38.258510168+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"vcfnexm2"}}
+{"time":"2024-10-23T13:49:38.258519049+02:00","level":"INFO","msg":"sender: closed","stream_id":"vcfnexm2"}
+{"time":"2024-10-23T13:49:38.259995592+02:00","level":"INFO","msg":"stream: closed","id":"vcfnexm2"}

@@ -1,0 +1,17 @@
+{"time":"2024-10-23T13:55:49.444498802+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T13:55:49.444510773+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_135549-8hjlmytx/logs/debug-core.log"}
+{"time":"2024-10-23T13:55:49.557917784+02:00","level":"INFO","msg":"created new stream","id":"8hjlmytx"}
+{"time":"2024-10-23T13:55:49.557967483+02:00","level":"INFO","msg":"stream: started","id":"8hjlmytx"}
+{"time":"2024-10-23T13:55:49.558009969+02:00","level":"INFO","msg":"sender: started","stream_id":"8hjlmytx"}
+{"time":"2024-10-23T13:55:49.557982378+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"8hjlmytx"}}
+{"time":"2024-10-23T13:55:49.558009835+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"8hjlmytx"}}
+{"time":"2024-10-23T13:55:50.360392815+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T13:56:34.310618234+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T13:56:34.311377944+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T13:56:35.199978245+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T13:56:35.311154697+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.11102233}],"total_operations":1}}
+{"time":"2024-10-23T13:56:36.422951634+02:00","level":"INFO","msg":"stream: closing","id":"8hjlmytx"}
+{"time":"2024-10-23T13:56:36.423184928+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"8hjlmytx"}}
+{"time":"2024-10-23T13:56:36.423202197+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"8hjlmytx"}}
+{"time":"2024-10-23T13:56:36.423209787+02:00","level":"INFO","msg":"sender: closed","stream_id":"8hjlmytx"}
+{"time":"2024-10-23T13:56:36.424770055+02:00","level":"INFO","msg":"stream: closed","id":"8hjlmytx"}

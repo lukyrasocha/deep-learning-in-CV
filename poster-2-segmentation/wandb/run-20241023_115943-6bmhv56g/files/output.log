@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/main.py", line 85, in <module>
+    train_model(encdec_ph2_model, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/train.py", line 27, in train_model
+    loss.backward()
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/_tensor.py", line 581, in backward
+    torch.autograd.backward(
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/autograd/__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/autograd/graph.py", line 825, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+RuntimeError: [enforce fail at alloc_cpu.cpp:117] err == 0. DefaultCPUAllocator: can't allocate memory: you tried to allocate 2147483648 bytes. Error code 12 (Cannot allocate memory)

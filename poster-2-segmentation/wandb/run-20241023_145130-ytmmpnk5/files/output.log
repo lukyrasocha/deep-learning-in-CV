@@ -1,0 +1,38 @@
+Traceback (most recent call last):
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/main.py", line 176, in <module>
+    train_model(UNetModel, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/train.py", line 24, in train_model
+    outputs = model(images)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/models.py", line 123, in forward
+    down_1, p1 = self.down_convolution_1(x)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/models.py", line 87, in forward
+    down = self.conv(x)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/models.py", line 77, in forward
+    return self.conv_op(x)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/container.py", line 250, in forward
+    input = module(input)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/conv.py", line 554, in forward
+    return self._conv_forward(input, self.weight, self.bias)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/conv.py", line 549, in _conv_forward
+    return F.conv2d(
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 48.00 MiB. GPU 0 has a total capacity of 39.50 GiB of which 45.56 MiB is free. Process 3480068 has 2.43 GiB memory in use. Process 3611642 has 25.11 GiB memory in use. Process 4099066 has 5.83 GiB memory in use. Process 667178 has 4.91 GiB memory in use. Process 886006 has 610.00 MiB memory in use. Including non-PyTorch memory, this process has 550.00 MiB memory in use. Of the allocated memory 123.36 MiB is allocated by PyTorch, and 12.64 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
