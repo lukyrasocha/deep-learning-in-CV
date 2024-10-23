@@ -8,7 +8,7 @@ from utils.logger import logger
 from utils.visualize import display_random_images_and_masks, visualize_predictions
 from models.train import train_model
 from models.models import EncDec
-from models.losses import bce_loss
+from models.losses import bce_loss, focal_loss
 from models.models import DoubleConv, DownSample, UpSample, UNet
 
 
@@ -76,7 +76,7 @@ display_random_images_and_masks(drive_train_dataset, figname="drive_random.png",
 logger.success("Saved example images and masks to 'figures'")
 
 # Simple Encoder-Decoder on PH2
-
+'''
 LEARNING_RATE = 0.001
 MAX_EPOCHS = 20
 loss_fn = bce_loss
@@ -154,11 +154,12 @@ logger.working_on("Training simple UNet on PH2")
 train_model(UNetModel, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
 visualize_predictions(UNetModel, ph2_train_loader, DEVICE, figname="UNet_predictions.png", num_images=3)
 logger.success("Saved examples of predictions for UNet to 'figures'")
-
+'''
+print("just the second UNet")
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
 MAX_EPOCHS = 20
-loss_fn = bce_loss
+loss_fn = focal_loss
 
 UNetModel = UNet(in_channels=3, num_classes=1)
 optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
@@ -169,7 +170,7 @@ config= {
     "architecture": "UNet",
     "dataset": "DRIVE",
     "epochs": MAX_EPOCHS,
-    "loss_fn": "BinaryCrossEntropy",
+    "loss_fn": "FocalLoss",
     "optimizer": "Adam"
 }
 
