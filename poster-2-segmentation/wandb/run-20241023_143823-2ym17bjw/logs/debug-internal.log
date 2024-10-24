@@ -1,0 +1,17 @@
+{"time":"2024-10-23T14:38:23.519968667+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T14:38:23.519991951+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_143823-2ym17bjw/logs/debug-core.log"}
+{"time":"2024-10-23T14:38:23.634183879+02:00","level":"INFO","msg":"created new stream","id":"2ym17bjw"}
+{"time":"2024-10-23T14:38:23.634242918+02:00","level":"INFO","msg":"stream: started","id":"2ym17bjw"}
+{"time":"2024-10-23T14:38:23.634276299+02:00","level":"INFO","msg":"sender: started","stream_id":"2ym17bjw"}
+{"time":"2024-10-23T14:38:23.634254319+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"2ym17bjw"}}
+{"time":"2024-10-23T14:38:23.634276298+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"2ym17bjw"}}
+{"time":"2024-10-23T14:38:23.917388603+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T14:38:42.425927234+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T14:38:42.426574215+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T14:38:43.343953078+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T14:38:43.426633028+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.08256944}],"total_operations":1}}
+{"time":"2024-10-23T14:38:44.561226729+02:00","level":"INFO","msg":"stream: closing","id":"2ym17bjw"}
+{"time":"2024-10-23T14:38:44.561243051+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"2ym17bjw"}}
+{"time":"2024-10-23T14:38:44.561258234+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"2ym17bjw"}}
+{"time":"2024-10-23T14:38:44.561266157+02:00","level":"INFO","msg":"sender: closed","stream_id":"2ym17bjw"}
+{"time":"2024-10-23T14:38:44.565626784+02:00","level":"INFO","msg":"stream: closed","id":"2ym17bjw"}

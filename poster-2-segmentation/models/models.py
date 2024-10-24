@@ -66,8 +66,10 @@ class DoubleConv(nn.Module):
         super().__init__()
         self.conv_op = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),  # Batch Normalization
             nn.ReLU(),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),  # Batch Normalization
             nn.ReLU()
         )
 
@@ -130,7 +132,9 @@ class UNet(nn.Module):
         up_3 = self.up_convolution_3(up_2, down_2)
         up_4 = self.up_convolution_4(up_3, down_1)
 
+
         out = self.out(up_4)
+
         return out
 
 

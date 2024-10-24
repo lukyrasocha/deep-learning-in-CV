@@ -1,0 +1,17 @@
+{"time":"2024-10-23T14:35:52.427469598+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T14:35:52.427483268+02:00","level":"INFO","msg":"created symlink","path":"/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_143552-p6270xpw/logs/debug-core.log"}
+{"time":"2024-10-23T14:35:52.538019202+02:00","level":"INFO","msg":"created new stream","id":"p6270xpw"}
+{"time":"2024-10-23T14:35:52.538057527+02:00","level":"INFO","msg":"stream: started","id":"p6270xpw"}
+{"time":"2024-10-23T14:35:52.538112489+02:00","level":"INFO","msg":"sender: started","stream_id":"p6270xpw"}
+{"time":"2024-10-23T14:35:52.538090482+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"p6270xpw"}}
+{"time":"2024-10-23T14:35:52.538116991+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"p6270xpw"}}
+{"time":"2024-10-23T14:35:52.816418954+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T14:36:10.217902913+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T14:36:10.218944783+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T14:36:11.218299356+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading config.yaml","runtime_seconds":0.639568027,"progress":"678B/678B"}],"total_operations":1}}
+{"time":"2024-10-23T14:36:11.29040948+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T14:36:12.541843156+02:00","level":"INFO","msg":"stream: closing","id":"p6270xpw"}
+{"time":"2024-10-23T14:36:12.54200455+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"p6270xpw"}}
+{"time":"2024-10-23T14:36:12.542030259+02:00","level":"INFO","msg":"sender: closed","stream_id":"p6270xpw"}
+{"time":"2024-10-23T14:36:12.542024567+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"p6270xpw"}}
+{"time":"2024-10-23T14:36:12.543254901+02:00","level":"INFO","msg":"stream: closed","id":"p6270xpw"}

@@ -1,0 +1,22 @@
+Traceback (most recent call last):
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/main.py", line 176, in <module>
+    train_model(UNetModel, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
+  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/train.py", line 12, in train_model
+    model = model.to(device)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1340, in to
+    return self._apply(convert)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  [Previous line repeated 1 more time]
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 927, in _apply
+    param_applied = fn(param)
+  File "/zhome/26/8/209207/venv/project2_venv/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1326, in convert
+    return t.to(
+RuntimeError: CUDA error: out of memory
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.

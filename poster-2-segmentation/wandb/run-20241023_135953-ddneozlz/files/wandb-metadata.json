@@ -1,0 +1,49 @@
+{
+  "os":  "Linux-6.1.109-1.el9.elrepo.x86_64-x86_64-with-glibc2.34",
+  "python":  "3.9.18",
+  "startedAt":  "2024-10-23T11:59:53.377395Z",
+  "program":  "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/main.py",
+  "codePath":  "poster-2-segmentation/main.py",
+  "git":  {
+    "remote":  "git@github.com:lukyrasocha/02516-intro-to-dl-in-cv.git",
+    "commit":  "f489e8f018a2341e4c470cae2fe42c3231ee9a88"
+  },
+  "email":  "lurax@computas.com",
+  "root":  "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation",
+  "host":  "n-62-12-20",
+  "username":  "s240466",
+  "executable":  "/zhome/26/8/209207/venv/project2_venv/bin/python",
+  "codePathLocal":  "main.py",
+  "cpu_count":  32,
+  "cpu_count_logical":  64,
+  "gpu":  "NVIDIA A100-PCIE-40GB",
+  "gpu_count":  2,
+  "disk":  {
+    "/":  {
+      "total":  "76817485824",
+      "used":  "5865111552"
+    }
+  },
+  "memory":  {
+    "total":  "810707099648"
+  },
+  "cpu":  {
+    "count":  32,
+    "countLogical":  64
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA A100-PCIE-40GB",
+      "memoryTotal":  "42949672960",
+      "cudaCores":  6912,
+      "architecture":  "Ampere"
+    },
+    {
+      "name":  "NVIDIA A100-PCIE-40GB",
+      "memoryTotal":  "42949672960",
+      "cudaCores":  6912,
+      "architecture":  "Ampere"
+    }
+  ],
+  "cudaVersion":  "12.6"
+}
