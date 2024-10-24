@@ -76,7 +76,7 @@ display_random_images_and_masks(drive_train_dataset, figname="drive_random.png",
 logger.success("Saved example images and masks to 'figures'")
 
 # Simple Encoder-Decoder on PH2
-'''
+
 LEARNING_RATE = 0.001
 MAX_EPOCHS = 20
 loss_fn = bce_loss
@@ -154,8 +154,11 @@ logger.working_on("Training simple UNet on PH2")
 train_model(UNetModel, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
 visualize_predictions(UNetModel, ph2_train_loader, DEVICE, figname="UNet_predictions.png", num_images=3)
 logger.success("Saved examples of predictions for UNet to 'figures'")
-'''
+
 print("just the second UNet")
+#encdec_drive_model = EncDec(input_channels=3, output_channels=1) # line is temporary
+
+
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
 MAX_EPOCHS = 20
@@ -176,7 +179,7 @@ config= {
 
 logger.working_on("Training simple UNet on DRIVE")
 train_model(UNetModel, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
-visualize_predictions(encdec_drive_model, drive_train_loader, DEVICE, figname="drive_predictions_UNet.png", num_images=3)
+visualize_predictions(encdec_drive_model, drive_train_loader, DEVICE, figname="drive_predictions_UNet_fl.png", num_images=3)
 logger.success("Saved examples of predictions for Enc-Dec of DRIVE to 'figures'")
 
 

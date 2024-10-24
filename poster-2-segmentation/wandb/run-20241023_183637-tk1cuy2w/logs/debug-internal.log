@@ -1,0 +1,17 @@
+{"time":"2024-10-23T18:36:37.959508021+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T18:36:37.959518277+02:00","level":"INFO","msg":"created symlink","path":"/zhome/c4/8/214730/02516-intro-to-dl-in-cv/poster-2-segmentation/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_183637-tk1cuy2w/logs/debug-core.log"}
+{"time":"2024-10-23T18:36:38.071501405+02:00","level":"INFO","msg":"created new stream","id":"tk1cuy2w"}
+{"time":"2024-10-23T18:36:38.071533715+02:00","level":"INFO","msg":"stream: started","id":"tk1cuy2w"}
+{"time":"2024-10-23T18:36:38.071563784+02:00","level":"INFO","msg":"sender: started","stream_id":"tk1cuy2w"}
+{"time":"2024-10-23T18:36:38.071547645+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"tk1cuy2w"}}
+{"time":"2024-10-23T18:36:38.07156462+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"tk1cuy2w"}}
+{"time":"2024-10-23T18:36:38.365363751+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T18:36:45.786201578+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T18:36:45.786868289+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T18:36:46.786704269+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"saving job artifact","runtime_seconds":0.839976309,"subtasks":[{"desc":"requirements.frozen.txt","runtime_seconds":0.140072837,"progress":"2.4KB/2.4KB"},{"desc":"wandb-job.json","runtime_seconds":0.140065565,"progress":"758B/758B"}]}],"total_operations":1}}
+{"time":"2024-10-23T18:36:48.359649557+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T18:36:49.583479365+02:00","level":"INFO","msg":"stream: closing","id":"tk1cuy2w"}
+{"time":"2024-10-23T18:36:49.583668972+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"tk1cuy2w"}}
+{"time":"2024-10-23T18:36:49.583679944+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"tk1cuy2w"}}
+{"time":"2024-10-23T18:36:49.583682648+02:00","level":"INFO","msg":"sender: closed","stream_id":"tk1cuy2w"}
+{"time":"2024-10-23T18:36:49.584614165+02:00","level":"INFO","msg":"stream: closed","id":"tk1cuy2w"}
