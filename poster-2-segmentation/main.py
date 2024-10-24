@@ -7,7 +7,7 @@ from utils.load_data import load_data
 from utils.logger import logger
 from utils.visualize import display_random_images_and_masks, visualize_predictions
 from models.train import train_model
-from models.models import EncDec, UNet
+from models.models import EncDec, UNet, UnetDeeper
 from models.losses import bce_loss
 from utils.transforms import JointTransform
 from torch.utils.data import DataLoader
@@ -38,9 +38,9 @@ ph2_val_dataset = load_data('ph2', split='val', transform=transform_ph2)
 ph2_test_dataset = load_data('ph2', split='test', transform=transform_ph2)
 
 # Data loaders for PH2
-ph2_train_loader = DataLoader(ph2_train_dataset, batch_size=16, shuffle=True)
-ph2_val_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=False)
+ph2_train_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=False)
 ph2_test_loader = DataLoader(ph2_test_dataset, batch_size=16, shuffle=False)
+ph2_val_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=False)
 
 # Load DRIVE dataset with augmentation for training
 logger.working_on("Loading data for DRIVE")
@@ -56,8 +56,8 @@ drive_test_loader = DataLoader(drive_test_dataset, batch_size=3, shuffle=False)
 logger.success("Data loaded")
 
 # Display some images
-display_random_images_and_masks(ph2_train_dataset, figname="ph2_random.png", num_images=3)
-display_random_images_and_masks(drive_train_dataset, figname="drive_random.png", num_images=3)
+display_random_images_and_masks(ph2_train_dataset, figname="ph2_random.png", num_images=15)
+display_random_images_and_masks(drive_train_dataset, figname="drive_random.png", num_images=15)
 logger.success("Saved example images and masks to 'figures'")
 
 # Simple Encoder-Decoder on PH2
@@ -100,6 +100,7 @@ config= {
     "loss_fn": "BinaryCrossEntropy",
     "optimizer": "Adam"
 }
+
 
 if TRAIN:
     logger.working_on("Training simple Encoder-Decoder on DRIVE")
