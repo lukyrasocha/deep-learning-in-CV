@@ -52,11 +52,7 @@ class PH2Dataset(Dataset):
         mask = Image.open(self.mask_paths[idx]).convert('L')  # Convert mask to grayscale
 
         if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
-
-        # Binarize the mask (convert to 0s and 1s)
-        mask = (mask > 0).float()  
+            image, mask = self.transform(image, mask)
 
         return image, mask
 
@@ -104,10 +100,7 @@ class DRIVEDataset(Dataset):
         mask = Image.open(self.mask_paths[idx]).convert('L')
 
         if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
-
-        mask = (mask > 0).float()  
+            image, mask = self.transform(image, mask)
 
         return image, mask
 
