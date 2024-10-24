@@ -1,0 +1,17 @@
+{"time":"2024-10-23T18:47:14.213459682+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T18:47:14.213470072+02:00","level":"INFO","msg":"created symlink","path":"/zhome/c4/8/214730/02516-intro-to-dl-in-cv/poster-2-segmentation/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_184714-sj0oa05f/logs/debug-core.log"}
+{"time":"2024-10-23T18:47:14.332779875+02:00","level":"INFO","msg":"created new stream","id":"sj0oa05f"}
+{"time":"2024-10-23T18:47:14.332832877+02:00","level":"INFO","msg":"stream: started","id":"sj0oa05f"}
+{"time":"2024-10-23T18:47:14.332867308+02:00","level":"INFO","msg":"sender: started","stream_id":"sj0oa05f"}
+{"time":"2024-10-23T18:47:14.332852924+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"sj0oa05f"}}
+{"time":"2024-10-23T18:47:14.332874969+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"sj0oa05f"}}
+{"time":"2024-10-23T18:47:14.64648973+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T18:47:55.201979539+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T18:47:55.202432196+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T18:47:56.166001763+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading config.yaml","runtime_seconds":0.428216923,"progress":"676B/676B"},{"desc":"uploading output.log","runtime_seconds":0.428209256,"progress":"2.8KB/2.8KB"}],"total_operations":2}}
+{"time":"2024-10-23T18:47:56.45714728+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T18:47:57.685672369+02:00","level":"INFO","msg":"stream: closing","id":"sj0oa05f"}
+{"time":"2024-10-23T18:47:57.685815034+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"sj0oa05f"}}
+{"time":"2024-10-23T18:47:57.685828486+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"sj0oa05f"}}
+{"time":"2024-10-23T18:47:57.685833489+02:00","level":"INFO","msg":"sender: closed","stream_id":"sj0oa05f"}
+{"time":"2024-10-23T18:47:57.687000149+02:00","level":"INFO","msg":"stream: closed","id":"sj0oa05f"}
