@@ -7,15 +7,14 @@ from utils.load_data import load_data
 from utils.logger import logger
 from utils.visualize import display_random_images_and_masks, visualize_predictions
 from models.train import train_model
-from models.models import EncDec, UNet, UnetDeeper
+from models.models import EncDec, UNet 
 from models.losses import bce_loss
 from utils.transforms import JointTransform
 from torch.utils.data import DataLoader
 
 
-PH2 = True
-DRIVE = True
-TRAIN = False
+PH2_TRAIN_CNN = True
+DRIVE_TRAIN_CNN = False
 
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
@@ -38,7 +37,7 @@ ph2_val_dataset = load_data('ph2', split='val', transform=transform_ph2)
 ph2_test_dataset = load_data('ph2', split='test', transform=transform_ph2)
 
 # Data loaders for PH2
-ph2_train_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=False)
+ph2_train_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=True)
 ph2_test_loader = DataLoader(ph2_test_dataset, batch_size=16, shuffle=False)
 ph2_val_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=False)
 
@@ -56,105 +55,110 @@ drive_test_loader = DataLoader(drive_test_dataset, batch_size=3, shuffle=False)
 logger.success("Data loaded")
 
 # Display some images
-display_random_images_and_masks(ph2_train_dataset, figname="ph2_random.png", num_images=15)
-display_random_images_and_masks(drive_train_dataset, figname="drive_random.png", num_images=15)
+display_random_images_and_masks(ph2_train_dataset, figname="ph2_random.png", num_images=3)
+display_random_images_and_masks(drive_train_dataset, figname="drive_random.png", num_images=3)
 logger.success("Saved example images and masks to 'figures'")
 
-# Simple Encoder-Decoder on PH2
 
-LEARNING_RATE = 0.0001
-MAX_EPOCHS = 20 
-loss_fn = bce_loss
+if PH2_TRAIN_CNN:
+    # Simple Encoder-Decoder on PH2
 
-
-encdec_ph2_model = EncDec(input_channels=3, output_channels=1)
-optimizer = torch.optim.Adam(encdec_ph2_model.parameters(), lr=LEARNING_RATE)
-
-config= {
-    "learning_rate": LEARNING_RATE,
-    "architecture": "Simple-Encoder-Decoder",
-    "dataset": "PH2",
-    "epochs": MAX_EPOCHS,
-    "loss_fn": "BinaryCrossEntropy",
-    "optimizer": "Adam"
-}
-
-logger.working_on("Training simple Encoder-Decoder on PH2")
-train_model(encdec_ph2_model, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
-visualize_predictions(encdec_ph2_model, ph2_train_loader, DEVICE, figname="ph2_predictions.png", num_images=3)
-logger.success("Saved examples of predictions for Enc-Dec of PH2 to 'figures'")
-
-# Simple Encoder-Decoder on DRIVE
-LEARNING_RATE = 0.001
-MAX_EPOCHS = 20
-loss_fn = bce_loss
-
-encdec_drive_model = EncDec(input_channels=3, output_channels=1)
-optimizer = torch.optim.Adam(encdec_drive_model.parameters(), lr=LEARNING_RATE)
-
-config= {
-    "learning_rate": LEARNING_RATE,
-    "architecture": "Simple-Encoder-Decoder",
-    "dataset": "DRIVE",
-    "epochs": MAX_EPOCHS,
-    "loss_fn": "BinaryCrossEntropy",
-    "optimizer": "Adam"
-}
-
-
-if TRAIN:
-    logger.working_on("Training simple Encoder-Decoder on DRIVE")
-    train_model(encdec_drive_model, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
-    visualize_predictions(encdec_drive_model, drive_train_loader, DEVICE, figname="drive_predictions.png", num_images=3)
-    logger.success("Saved examples of predictions for Enc-Dec of DRIVE to 'figures'")
-    
-    # Simple Encoder-Decoder on UNet
-
-    LEARNING_RATE = 0.001
-    MAX_EPOCHS = 20
+    LEARNING_RATE = 0.0001
+    MAX_EPOCHS = 20 
     loss_fn = bce_loss
 
-    UNetModel = UNet(in_channels=3, num_classes=1)
-    optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
+
+    encdec_ph2_model = EncDec(input_channels=3, output_channels=1)
+    optimizer = torch.optim.Adam(encdec_ph2_model.parameters(), lr=LEARNING_RATE)
 
     config= {
         "learning_rate": LEARNING_RATE,
-        "architecture": "UNet",
+        "architecture": "Simple-Encoder-Decoder",
         "dataset": "PH2",
         "epochs": MAX_EPOCHS,
         "loss_fn": "BinaryCrossEntropy",
         "optimizer": "Adam"
     }
 
+    logger.working_on("Training simple Encoder-Decoder on PH2")
+    train_model(encdec_ph2_model, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
+    visualize_predictions(encdec_ph2_model, ph2_train_loader, DEVICE, figname="ph2_predictions.png", num_images=3)
+    logger.success("Saved examples of predictions for Enc-Dec of PH2 to 'figures'")
 
-    logger.working_on("Training simple UNet on PH2")
-    train_model(UNetModel, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
-    visualize_predictions(UNetModel, ph2_train_loader, DEVICE, figname="UNet_predictions.png", num_images=3)
-    logger.success("Saved examples of predictions for UNet to 'figures'")
-
-    # Simple UNet on DRIVE
+if DRIVE_TRAIN_CNN:
+    # Simple Encoder-Decoder on DRIVE
     LEARNING_RATE = 0.001
     MAX_EPOCHS = 20
     loss_fn = bce_loss
 
-    UNetModel = UNet(in_channels=3, num_classes=1)
-    optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
+    encdec_drive_model = EncDec(input_channels=3, output_channels=1)
+    optimizer = torch.optim.Adam(encdec_drive_model.parameters(), lr=LEARNING_RATE)
 
     config= {
         "learning_rate": LEARNING_RATE,
-        "architecture": "UNet",
+        "architecture": "Simple-Encoder-Decoder",
         "dataset": "DRIVE",
         "epochs": MAX_EPOCHS,
         "loss_fn": "BinaryCrossEntropy",
         "optimizer": "Adam"
     }
 
-    logger.working_on("Training simple UNet on DRIVE")
-    train_model(UNetModel, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
-    visualize_predictions(UNetModel, drive_train_loader, DEVICE, figname="drive_predictions_UNet.png", num_images=3)
-    logger.success("Saved examples of predictions for UNet of DRIVE to 'figures'")
+
+    logger.working_on("Training simple Encoder-Decoder on DRIVE")
+    train_model(encdec_drive_model, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
+    visualize_predictions(encdec_drive_model, drive_train_loader, DEVICE, figname="drive_predictions.png", num_images=3)
+    logger.success("Saved examples of predictions for Enc-Dec of DRIVE to 'figures'")
+
+# Simple Encoder-Decoder on UNet
+LEARNING_RATE = 0.001
+MAX_EPOCHS = 20
+PADDING = 1 # no padding
+loss_fn = bce_loss
+
+UNetModel = UNet(in_channels=3, num_classes=1, padding=PADDING)
+optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
+
+config= {
+    "learning_rate": LEARNING_RATE,
+    "architecture": "UNet",
+    "dataset": "PH2",
+    "epochs": MAX_EPOCHS,
+    "loss_fn": "BinaryCrossEntropy",
+    "optimizer": "Adam",
+    "padding": PADDING 
+}
 
 
-    # Evaluation
+logger.working_on("Training simple UNet on PH2")
+train_model(UNetModel, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
+visualize_predictions(UNetModel, ph2_train_loader, DEVICE, figname="UNet_predictions.png", num_images=3)
+logger.success("Saved examples of predictions for UNet to 'figures'")
 
-    # Plots
+# Simple UNet on DRIVE
+LEARNING_RATE = 0.001
+MAX_EPOCHS = 20
+PADDING = 1 # no padding
+loss_fn = bce_loss
+
+UNetModel = UNet(in_channels=3, num_classes=1, padding=PADDING)
+optimizer = torch.optim.Adam(UNetModel.parameters(), lr=LEARNING_RATE)
+
+config= {
+    "learning_rate": LEARNING_RATE,
+    "architecture": "UNet",
+    "dataset": "DRIVE",
+    "epochs": MAX_EPOCHS,
+    "loss_fn": "BinaryCrossEntropy",
+    "optimizer": "Adam",
+    "padding": PADDING
+}
+
+logger.working_on("Training simple UNet on DRIVE")
+train_model(UNetModel, drive_train_loader, drive_val_loader, loss_fn, optimizer, wandb_config=config, num_epochs= MAX_EPOCHS, device=DEVICE)
+visualize_predictions(UNetModel, drive_train_loader, DEVICE, figname="drive_predictions_UNet.png", num_images=3)
+logger.success("Saved examples of predictions for UNet of DRIVE to 'figures'")
+
+
+# Evaluation
+
+# Plots
