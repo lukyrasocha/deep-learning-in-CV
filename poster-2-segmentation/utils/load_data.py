@@ -6,13 +6,15 @@ import random
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
+import numpy as np
 
 class PH2Dataset(Dataset):
-    def __init__(self, split='train', transform=None, data_path='/dtu/datasets1/02516/PH2_Dataset_images'):
+    def __init__(self, split='train', transform=None, crop = False, data_path='/dtu/datasets1/02516/PH2_Dataset_images'):
         self.transform = transform
         self.image_paths = []
         self.data_path = data_path
         self.mask_paths = []
+        self.crop = crop
 
         # Collect all IMDxxx directories
         sample_dirs = sorted(os.listdir(self.data_path))
@@ -52,14 +54,22 @@ class PH2Dataset(Dataset):
         mask = Image.open(self.mask_paths[idx]).convert('L')  # Convert mask to grayscale
 
         if self.transform:
-            image, mask = self.transform(image, mask)
+            if self.crop:
+                image, mask = self.transform(image, mask)
+            else:
+                image = self.transform(image)
+                mask = self.transform(mask)
+
+        # Binarize the mask (convert to 0s and 1s)
+        mask = (mask > 0).float()  
 
         return image, mask
 
 class DRIVEDataset(Dataset):
-    def __init__(self, split='train', transform=None, data_path='/dtu/datasets1/02516/DRIVE'):
+    def __init__(self, split='train', transform=None, crop = False, data_path='/dtu/datasets1/02516/DRIVE'):
         self.transform = transform
         self.data_path = data_path
+        self.crop = crop
 
         data_type = 'training'
         images_dir = os.path.join(self.data_path, data_type, 'images')
@@ -97,19 +107,25 @@ class DRIVEDataset(Dataset):
 
     def __getitem__(self, idx):
         image = Image.open(self.image_paths[idx]).convert('RGB')
-        mask = Image.open(self.mask_paths[idx]).convert('L')
+        mask = Image.open(self.mask_paths[idx]).convert('L')  # Convert mask to grayscale
 
         if self.transform:
-            image, mask = self.transform(image, mask)
+            if self.crop:
+                image, mask = self.transform(image, mask)
+            else:
+                image = self.transform(image)
+                mask = self.transform(mask)
+
+        # Binarize the mask (convert to 0s and 1s)
+        mask = (mask > 0).float()  
 
         return image, mask
 
-
-def load_data(data_name, split='train', transform=None, data_path='/dtu/datasets1/02516'):
+def load_data(data_name, split='train', transform=None, crop = False, data_path='/dtu/datasets1/02516'):
     if data_name.lower() == 'ph2':
-        dataset = PH2Dataset(split=split, transform=transform, data_path=os.path.join(data_path, 'PH2_Dataset_images'))
+        dataset = PH2Dataset(split=split, transform=transform, crop = crop, data_path=os.path.join(data_path, 'PH2_Dataset_images'))
     elif data_name.lower() == 'drive':
-        dataset = DRIVEDataset(split=split, transform=transform, data_path=os.path.join(data_path, 'DRIVE'))
+        dataset = DRIVEDataset(split=split, transform=transform, crop = crop, data_path=os.path.join(data_path, 'DRIVE'))
     else:
         raise ValueError(f"Dataset {data_name} not recognized.")
     return dataset
