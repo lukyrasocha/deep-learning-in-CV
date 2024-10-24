@@ -1,3 +1,0 @@
-ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m1[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m1.9493[0m, Validation Loss: [1;36m0.6693[0m
-ℹ [1;34mINFO[0m: Epoch [1m[[0m[1;36m2[0m/[1;36m20[0m[1m][0m, Training Loss: [1;36m0.6652[0m, Validation Loss: [1;36m0.6460[0m
-[34m[1mwandb[0m: [33mWARNING[0m Fatal error while uploading data. Some run data will not be synced, but it will still be written to disk. Use `wandb sync` at the end of the run to try uploading.
