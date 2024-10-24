@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import random
 import torch
+import numpy as np
 
 def display_random_images_and_masks(dataset, figname, num_images=3):
     random.seed(42)
@@ -72,6 +73,9 @@ def visualize_predictions(model, data_loader, device, figname, num_images=3):
                 mask_np = masks[i].squeeze().cpu().numpy() 
                 pred_np = preds[i].squeeze().cpu().numpy()
 
+                _, pred_width, pred_height = preds[i].shape
+                _, original_width, original_height = masks[i].shape
+
                 # Plot original image
                 plt.subplot(num_images, 3, images_shown * 3 + 1)
                 plt.imshow(image_np)
@@ -86,6 +90,7 @@ def visualize_predictions(model, data_loader, device, figname, num_images=3):
 
                 # Plot predicted mask
                 plt.subplot(num_images, 3, images_shown * 3 + 3)
+                pred_np = np.pad(pred_np, pad_width = int((original_width-pred_width)/2), mode="constant", constant_values = 0)
                 plt.imshow(pred_np, cmap='gray')
                 plt.axis('off')
                 plt.title("Predicted Mask")
