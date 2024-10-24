@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/main.py", line 154, in <module>
-    train_model(UNetModel, ph2_train_loader, ph2_val_loader, loss_fn, optimizer,wandb_config=config, num_epochs=MAX_EPOCHS, device=DEVICE)
-  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/train.py", line 25, in train_model
-    loss = loss_fn(outputs, masks)
-  File "/zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-2-segmentation/models/losses.py", line 8, in dice_loss
-    return torch.mean(2 * y_real * y_pred + 1) / (torch.mean(y_real + y_pred) + 1)
-NameError: name 'torch' is not defined
