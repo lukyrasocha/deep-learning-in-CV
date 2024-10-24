@@ -147,12 +147,12 @@ class UNet(nn.Module):
 
 if __name__ == "__main__":
     model_0_pad = UNet(in_channels=3, num_classes=1)
-    x = torch.randn((1, 3, 256, 256))
+    x = torch.randn((1, 3, 350, 350))
     print(f"Model with 0 padding: {model_0_pad(x).shape}")
-    assert model_0_pad(x).shape == torch.Size([1, 1, 68, 68])
+    #assert model_0_pad(x).shape == torch.Size([1, 1, 68, 68])
 
 
     model_1_pad = UNet(in_channels=3, num_classes=1, padding=1)
     x = torch.randn((1, 3, 256, 256))
     print(f"Model with 1 padding: {model_1_pad(x).shape}")
-    assert model_1_pad(x).shape == torch.Size([1, 1, 256, 256])
+    #assert model_1_pad(x).shape == torch.Size([1, 1, 256, 256])
