@@ -27,28 +27,14 @@ transform_ph2 = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-transform_ph2_train = transforms.Compose([
-    transforms.Resize((256, 256)),
-    #transforms.RandomCrop((128, 128)) ,
-    transforms.ToTensor(),
-])
-
 transform_drive = transforms.Compose([
     transforms.Resize((256, 256)),
     transforms.ToTensor(),
 ])
 
-transform_drive_train = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.RandomCrop((128, 128)) ,
-    transforms.ToTensor(),
-])
-
-
-
 # Load PH2 dataset with augmentation and artificial data (50 synthetic samples)
-#logger.working_on("Loading data for PH2")
-ph2_train_dataset = load_data('ph2', split='train', transform=transform_ph2_train)
+logger.working_on("Loading data for PH2")
+ph2_train_dataset = load_data('ph2', split='train', transform=transform_ph2)
 ph2_val_dataset = load_data('ph2', split='val', transform=transform_ph2)
 ph2_test_dataset = load_data('ph2', split='test', transform=transform_ph2)
 
