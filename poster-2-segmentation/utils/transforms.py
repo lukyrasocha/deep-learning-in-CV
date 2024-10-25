@@ -9,16 +9,17 @@ class JointTransform:
         self.resize = resize
 
     def __call__(self, image, mask):
+        # Resize
+        if self.resize is not None:
+            image = TF.resize(image, self.resize)
+            mask = TF.resize(mask, self.resize)
+
         # Random Crop
         if self.crop_size is not None:
             i, j, h, w = T.RandomCrop.get_params(image, output_size=self.crop_size)
             image = TF.crop(image, i, j, h, w)
             mask = TF.crop(mask, i, j, h, w)
 
-        # Resize
-        if self.resize is not None:
-            image = TF.resize(image, self.resize)
-            mask = TF.resize(mask, self.resize)
 
         # Other transformations (if any) can be added here
 

@@ -2,17 +2,18 @@ import torch
 import numpy as np
 
 from torchvision import transforms
+from torch.utils.data import DataLoader
 
 from utils.load_data import load_data
 from utils.logger import logger
-from utils.visualize import display_random_images_and_masks, visualize_predictions
+from utils.transforms import JointTransform
+from utils.visualize import display_random_images_and_masks, visualize_predictions, display_image_mask_prediction
 from models.train import train_model
 from models.models import EncDec, UNet 
 from models.losses import bce_loss
-from utils.transforms import JointTransform
-from torch.utils.data import DataLoader
 from models.split_image import split_image_into_patches
-from utils.visualize import display_image_and_mask
+from models.metrics import dice_overlap, IoU, accuracy, sensitivity, specificity
+from models.evaluation import compare_models
 
 
 PH2_TRAIN_CNN = True
@@ -26,8 +27,8 @@ logger.info(f"Running on {DEVICE}")
 logger.working_on("Loading data for PH2")
 
 # Adjustable crop size (set to None if you don't want to crop)
-CROP_SIZE = (350, 350)  # or None
-RESIZE = None #(400, 400)  # Resize after cropping (if desired)
+RESIZE = None #(400, 400) # Or None 
+CROP_SIZE = (256, 256)  # or None
 
 transform_ph2_train = JointTransform(crop_size=CROP_SIZE, resize=RESIZE)
 transform_drive_train = JointTransform(crop_size=CROP_SIZE, resize=RESIZE)
@@ -55,9 +56,9 @@ print('Mask shape:', mask.shape)
 assert len(np.unique(mask.numpy()[0])) <= 2, "mask needs to have binary values (0,1)"
 
 # Data loaders for PH2
-ph2_train_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=True)
-ph2_test_loader = DataLoader(ph2_test_dataset, batch_size=16, shuffle=False)
+ph2_train_loader = DataLoader(ph2_train_dataset, batch_size=16, shuffle=True)
 ph2_val_loader = DataLoader(ph2_val_dataset, batch_size=16, shuffle=False)
+ph2_test_loader = DataLoader(ph2_test_dataset, batch_size=16, shuffle=False)
 
 # Load DRIVE dataset with augmentation for training
 logger.working_on("Loading data for DRIVE")
@@ -86,7 +87,7 @@ if PH2_TRAIN_CNN:
     # Simple Encoder-Decoder on PH2
 
     LEARNING_RATE = 0.0001
-    MAX_EPOCHS = 100 
+    MAX_EPOCHS = 100
     loss_fn = bce_loss
 
 
@@ -110,7 +111,7 @@ if PH2_TRAIN_CNN:
 if DRIVE_TRAIN_CNN:
     # Simple Encoder-Decoder on DRIVE
     LEARNING_RATE = 0.001
-    MAX_EPOCHS = 100 
+    MAX_EPOCHS = 100
     loss_fn = bce_loss
 
     encdec_drive_model = EncDec(input_channels=3, output_channels=1)
@@ -133,8 +134,8 @@ if DRIVE_TRAIN_CNN:
 
 # Simple Encoder-Decoder on UNet
 LEARNING_RATE = 0.001
-MAX_EPOCHS = 100 
-PADDING = 0 # no padding
+MAX_EPOCHS = 100
+PADDING = 1 # 0 means no padding
 loss_fn = bce_loss
 
 UNetModel_ph2 = UNet(in_channels=3, num_classes=1, padding=PADDING)
@@ -158,8 +159,8 @@ logger.success("Saved examples of predictions for UNet to 'figures'")
 
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
-MAX_EPOCHS = 100 
-PADDING = 0 # no padding
+MAX_EPOCHS = 100
+PADDING = 1 # 0 means no padding
 loss_fn = bce_loss
 
 UNetModel_drive = UNet(in_channels=3, num_classes=1, padding=PADDING)
@@ -180,36 +181,26 @@ train_model(UNetModel_drive, drive_train_loader, drive_val_loader, loss_fn, opti
 visualize_predictions(UNetModel_drive, drive_train_loader, DEVICE, figname="UNET_drive_predictions.png", num_images=5)
 logger.success("Saved examples of predictions for UNet of DRIVE to 'figures'")
 
+#model = UNetModel_ph2.eval()
+#model.to(DEVICE)
+#i = 4
+
+# Get an image from the test loader
+#image_batch, mask_batch = next(iter(ph2_test_loader))
+#image = image_batch[i].to(DEVICE)
+#mask = mask_batch[i].to(DEVICE)
+#predicted_mask = split_image_into_patches(image, CROP_SIZE[0], UNetModel_ph2)
+#display_image_mask_prediction(image.cpu(), mask.cpu(), predicted_mask.cpu(), "stitched_segmentation_mads.png")
 
 # Evaluation
-with torch.no_grad():
-    model = UNetModel_ph2.eval()
+metrics = [dice_overlap, IoU, accuracy, sensitivity, specificity]
 
-    image, mask = next(iter(ph2_test_loader))
-    
-    image = image.to(DEVICE)
-    mask = mask.to(DEVICE)
+models = [UNetModel_ph2, encdec_ph2_model]  
+model_names = ["UNet", "Simple Encoder-Decoder"]
 
-    i = 5
-    image = image[i]
-    mask  = mask[i]
+compare_models(models, model_names, ph2_val_loader, DEVICE, metrics, dataset_name="PH2")
 
-
-    print("Original image")
-    print(image.shape)
-    print(mask.shape)
-
-    predicted_mask = split_image_into_patches(image, CROP_SIZE[0], UNetModel_ph2)
-    #predicted_mask = split_image_into_patches(image, 256, encdec_ph2_model)
-
-    print("Predicted mask shape")
-    print(predicted_mask.shape)
-
-    predicted_mask = predicted_mask.cpu()
-    image = image.cpu()
-    mask = mask.cpu()
-
-    display_image_and_mask(image, predicted_mask, "predicted_mask_ph2.png", "1")
-    display_image_and_mask(image, mask, "real_mask_ph2.png", "12")
-
-# Plots
+models = [UNetModel_drive, encdec_drive_model]  
+model_names = ["UNet", "Simple Encoder-Decoder"]
+# plots
+compare_models(models, model_names, drive_val_loader, DEVICE, metrics, dataset_name="DRIVE")

@@ -1,7 +1,6 @@
 import torch.nn.functional as F
 
 def reshape_input(y_pred, y_real):
-
         _, _, y_pred_height, y_pred_width = y_pred.shape
         _, _, y_real_height, y_real_width = y_real.shape
 
