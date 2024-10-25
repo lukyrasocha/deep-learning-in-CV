@@ -135,7 +135,7 @@ if DRIVE_TRAIN_CNN:
 # Simple Encoder-Decoder on UNet
 LEARNING_RATE = 0.001
 MAX_EPOCHS = 100
-PADDING = 1 # no padding
+PADDING = 1 # 0 means no padding
 loss_fn = bce_loss
 
 UNetModel_ph2 = UNet(in_channels=3, num_classes=1, padding=PADDING)
@@ -160,7 +160,7 @@ logger.success("Saved examples of predictions for UNet to 'figures'")
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
 MAX_EPOCHS = 100
-PADDING = 1 # no padding
+PADDING = 1 # 0 means no padding
 loss_fn = bce_loss
 
 UNetModel_drive = UNet(in_channels=3, num_classes=1, padding=PADDING)
@@ -198,9 +198,9 @@ metrics = [dice_overlap, IoU, accuracy, sensitivity, specificity]
 models = [UNetModel_ph2, encdec_ph2_model]  
 model_names = ["UNet", "Simple Encoder-Decoder"]
 
-compare_models(models, model_names, ph2_train_loader, DEVICE, metrics, dataset_name="PH2")
+compare_models(models, model_names, ph2_val_loader, DEVICE, metrics, dataset_name="PH2")
 
 models = [UNetModel_drive, encdec_drive_model]  
 model_names = ["UNet", "Simple Encoder-Decoder"]
 
-compare_models(models, model_names, drive_train_loader, DEVICE, metrics, dataset_name="DRIVE")
+compare_models(models, model_names, drive_val_loader, DEVICE, metrics, dataset_name="DRIVE")
