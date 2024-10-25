@@ -27,8 +27,8 @@ logger.info(f"Running on {DEVICE}")
 logger.working_on("Loading data for PH2")
 
 # Adjustable crop size (set to None if you don't want to crop)
-CROP_SIZE = (200, 200)  # or None
-RESIZE = None #(400, 400)  # Resize after cropping (if desired)
+RESIZE = (400, 400)  # Resize after cropping (if desired)
+CROP_SIZE = (256, 256)  # or None
 
 transform_ph2_train = JointTransform(crop_size=CROP_SIZE, resize=RESIZE)
 transform_drive_train = JointTransform(crop_size=CROP_SIZE, resize=RESIZE)
@@ -87,7 +87,7 @@ if PH2_TRAIN_CNN:
     # Simple Encoder-Decoder on PH2
 
     LEARNING_RATE = 0.0001
-    MAX_EPOCHS = 50
+    MAX_EPOCHS =2 
     loss_fn = bce_loss
 
 
@@ -111,7 +111,7 @@ if PH2_TRAIN_CNN:
 if DRIVE_TRAIN_CNN:
     # Simple Encoder-Decoder on DRIVE
     LEARNING_RATE = 0.001
-    MAX_EPOCHS = 50
+    MAX_EPOCHS =2 
     loss_fn = bce_loss
 
     encdec_drive_model = EncDec(input_channels=3, output_channels=1)
@@ -134,7 +134,7 @@ if DRIVE_TRAIN_CNN:
 
 # Simple Encoder-Decoder on UNet
 LEARNING_RATE = 0.001
-MAX_EPOCHS = 50
+MAX_EPOCHS =2 
 PADDING = 1 # no padding
 loss_fn = bce_loss
 
@@ -159,7 +159,7 @@ logger.success("Saved examples of predictions for UNet to 'figures'")
 
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
-MAX_EPOCHS = 50
+MAX_EPOCHS =2 
 PADDING = 1 # no padding
 loss_fn = bce_loss
 
@@ -191,7 +191,6 @@ logger.success("Saved examples of predictions for UNet of DRIVE to 'figures'")
 #mask = mask_batch[i].to(DEVICE)
 #predicted_mask = split_image_into_patches(image, CROP_SIZE[0], UNetModel_ph2)
 #display_image_mask_prediction(image.cpu(), mask.cpu(), predicted_mask.cpu(), "stitched_segmentation_mads.png")
-
 
 # Evaluation
 metrics = [dice_overlap, IoU, accuracy, sensitivity, specificity]
