@@ -27,7 +27,7 @@ logger.info(f"Running on {DEVICE}")
 logger.working_on("Loading data for PH2")
 
 # Adjustable crop size (set to None if you don't want to crop)
-RESIZE = (400, 400)  # Resize after cropping (if desired)
+RESIZE = None #(400, 400) # Or None 
 CROP_SIZE = (256, 256)  # or None
 
 transform_ph2_train = JointTransform(crop_size=CROP_SIZE, resize=RESIZE)
@@ -87,7 +87,7 @@ if PH2_TRAIN_CNN:
     # Simple Encoder-Decoder on PH2
 
     LEARNING_RATE = 0.0001
-    MAX_EPOCHS =2 
+    MAX_EPOCHS = 100
     loss_fn = bce_loss
 
 
@@ -111,7 +111,7 @@ if PH2_TRAIN_CNN:
 if DRIVE_TRAIN_CNN:
     # Simple Encoder-Decoder on DRIVE
     LEARNING_RATE = 0.001
-    MAX_EPOCHS =2 
+    MAX_EPOCHS = 100
     loss_fn = bce_loss
 
     encdec_drive_model = EncDec(input_channels=3, output_channels=1)
@@ -134,7 +134,7 @@ if DRIVE_TRAIN_CNN:
 
 # Simple Encoder-Decoder on UNet
 LEARNING_RATE = 0.001
-MAX_EPOCHS =2 
+MAX_EPOCHS = 100
 PADDING = 1 # no padding
 loss_fn = bce_loss
 
@@ -159,7 +159,7 @@ logger.success("Saved examples of predictions for UNet to 'figures'")
 
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
-MAX_EPOCHS =2 
+MAX_EPOCHS = 100
 PADDING = 1 # no padding
 loss_fn = bce_loss
 
@@ -195,16 +195,12 @@ logger.success("Saved examples of predictions for UNet of DRIVE to 'figures'")
 # Evaluation
 metrics = [dice_overlap, IoU, accuracy, sensitivity, specificity]
 
-# Assuming models and data loaders are defined
-models = [UNetModel_ph2, encdec_ph2_model]  # List your models here
+models = [UNetModel_ph2, encdec_ph2_model]  
 model_names = ["UNet", "Simple Encoder-Decoder"]
-
-# Compare models for PH2 dataset
 
 compare_models(models, model_names, ph2_train_loader, DEVICE, metrics, dataset_name="PH2")
 
-models = [UNetModel_drive, encdec_drive_model]  # List your models here
+models = [UNetModel_drive, encdec_drive_model]  
 model_names = ["UNet", "Simple Encoder-Decoder"]
 
-# Similarly for DRIVE dataset
 compare_models(models, model_names, drive_train_loader, DEVICE, metrics, dataset_name="DRIVE")

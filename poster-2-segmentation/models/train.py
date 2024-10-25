@@ -22,9 +22,8 @@ def train_model(model, train_loader, val_loader, loss_fn, optimizer, wandb_confi
             optimizer.zero_grad()
             
             outputs = model(images)
-            print(outputs.shape)
             loss = loss_fn(outputs, masks)
-            
+
             loss.backward()
             optimizer.step()
             

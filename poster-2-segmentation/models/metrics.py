@@ -12,8 +12,8 @@ def reshape_input(y_pred, y_real):
 
 
 def dice_overlap(y_pred, y_real):
-    print(f'The shape of y_pred {y_pred.shape}')
-    print(f'The shape of y_real {y_real.shape}')
+    #print(f'The shape of y_pred {y_pred.shape}')
+    #print(f'The shape of y_real {y_real.shape}')
     
     if y_pred.shape != y_real.shape:
         print(f'The shape of y_pred {y_pred.shape}')
@@ -58,7 +58,6 @@ def accuracy(y_pred, y_real):
     return accuracy.item()
 
 def sensitivity(y_pred, y_real, epsilon=1e-6):
-
     if y_pred.shape != y_real.shape:
         y_real = reshape_input(y_pred, y_real)
 
@@ -69,11 +68,9 @@ def sensitivity(y_pred, y_real, epsilon=1e-6):
     FN = ((pred == 0) & (target == 1)).sum().float()
 
     sensitivity = TP / (TP + FN + epsilon)
-    
     return sensitivity.item()  
 
 def specificity(y_pred, y_real, epsilon=1e-6):
-
     if y_pred.shape != y_real.shape:
         y_real = reshape_input(y_pred, y_real)
     
@@ -84,5 +81,5 @@ def specificity(y_pred, y_real, epsilon=1e-6):
     FP = ((pred == 1) & (target == 0)).sum().float()
 
     specificity = TN / (TN + FP + epsilon)
-    
+
     return specificity.item()  
