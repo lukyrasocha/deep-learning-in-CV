@@ -202,5 +202,5 @@ compare_models(models, model_names, ph2_val_loader, DEVICE, metrics, dataset_nam
 
 models = [UNetModel_drive, encdec_drive_model]  
 model_names = ["UNet", "Simple Encoder-Decoder"]
-
+# plots
 compare_models(models, model_names, drive_val_loader, DEVICE, metrics, dataset_name="DRIVE")
