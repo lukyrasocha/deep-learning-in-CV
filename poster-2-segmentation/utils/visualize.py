@@ -28,27 +28,40 @@ def display_random_images_and_masks(dataset, figname, num_images=3):
 
     plt.tight_layout()
     plt.savefig(f"figures/{figname}")
-def display_image_and_mask(image, mask, figname, image_id, num_images=1):
-    plt.figure(figsize=(10, num_images * 5))
 
-    image_np = image.permute(1, 2, 0).numpy()  # Change from CxHxW to HxWxC for plotting
-    mask_np = mask.squeeze().numpy()  
+def display_image_mask_prediction(image, mask, prediction, figname):
+    # Convert the prediction to a numpy array for processing
+    pred_np = prediction.squeeze().cpu().numpy()
 
-    # Display image
-    plt.subplot(num_images, 2, 1)
-    plt.imshow(image_np)
-    plt.axis('off')
-    plt.title(f"Image ID: {image_id}")  # Use the image ID in the title
+    plt.figure(figsize=(15, 5))
 
-    # Display mask
-    plt.subplot(num_images, 2, 2)
-    plt.imshow(mask_np, cmap='gray')
-    plt.axis('off')
-    plt.title(f"Mask")
+    # Image
+    plt.subplot(1, 3, 1)
+    plt.imshow(image.permute(1, 2, 0).cpu().numpy())
+    plt.grid(True, which='both', color='gray', linestyle='--', linewidth=0.5)
+    plt.xticks(fontsize=8)
+    plt.yticks(fontsize=8)
+    plt.title(f"Image")
+
+    # Ground Truth Mask
+    plt.subplot(1, 3, 2)
+    plt.imshow(mask.squeeze().cpu().numpy(), cmap='gray')
+    plt.grid(True, which='both', color='gray', linestyle='--', linewidth=0.5)
+    plt.xticks(fontsize=8)
+    plt.yticks(fontsize=8)
+    plt.title("Ground Truth Mask")
+
+    # Predicted Segmentation
+    plt.subplot(1, 3, 3)
+    plt.imshow(pred_np, cmap='gray')
+    plt.grid(True, which='both', color='gray', linestyle='--', linewidth=0.5)
+    plt.xticks(fontsize=8)
+    plt.yticks(fontsize=8)
+    plt.title("Stitched Segmentation")
 
     plt.tight_layout()
     plt.savefig(f"figures/{figname}")
-    plt.close()
+
 
 def visualize_predictions(model, data_loader, device, figname, num_images=3):
     model.eval()  
