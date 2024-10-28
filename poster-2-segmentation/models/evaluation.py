@@ -1,9 +1,11 @@
 import torch
-from utils.logger import logger
 import matplotlib.pyplot as plt
-from models.split_image import split_image_into_patches  # Ensure this import is present
+import wandb
 
-def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size):
+from utils.logger import logger
+from models.split_image import split_image_into_patches  
+
+def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size, add_edge = False):
     model.eval()
     metric_totals = {metric.__name__: 0.0 for metric in metrics}
     num_images = 0
@@ -18,7 +20,7 @@ def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size
             mask = masks.squeeze(0)
 
             # Process the image by splitting into patches
-            predicted_mask = split_image_into_patches(image, patch_size, model)
+            predicted_mask = split_image_into_patches(image, patch_size, model, add_edge=add_edge)
 
             assert mask.shape == predicted_mask.shape, "Predicted mask needs to have same shape as the target mask"
 
@@ -32,7 +34,9 @@ def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size
     # Calculate average metrics
     metric_averages = {metric: total / num_images for metric, total in metric_totals.items()}
 
-    logger.info(f"Evaluation results for {dataset_name}:")
+    wandb.log({f"{dataset_name}/{metric}": average for metric, average in metric_averages.items()})
+
+    logger.success(f"Evaluation results for {dataset_name}:")
     for metric, average in metric_averages.items():
         logger.info(f"{metric}: {average:.4f}")
 

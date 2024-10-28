@@ -2,12 +2,7 @@ import torch
 from utils.logger import logger
 import wandb
 
-def train_model(model, train_loader, val_loader, loss_fn, optimizer, wandb_config, num_epochs=10, device='cuda'):
-
-    wandb.init(
-        project="project2-segmentation",
-        config= wandb_config
-    )
+def train_model(model, train_loader, val_loader, loss_fn, optimizer, num_epochs=10, device='cuda'):
 
     model = model.to(device)
     
@@ -49,5 +44,4 @@ def train_model(model, train_loader, val_loader, loss_fn, optimizer, wandb_confi
 
         logger.info(f"Epoch [{epoch+1}/{num_epochs}], Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")
 
-    wandb.finish() 
     logger.success("Training completed.")
