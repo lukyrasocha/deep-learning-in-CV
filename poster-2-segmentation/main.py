@@ -87,7 +87,7 @@ if PH2_TRAIN_CNN:
     # Simple Encoder-Decoder on PH2
 
     LEARNING_RATE = 0.0001
-    MAX_EPOCHS = 100
+    MAX_EPOCHS = 2
     loss_fn = bce_loss
 
 
@@ -111,7 +111,7 @@ if PH2_TRAIN_CNN:
 if DRIVE_TRAIN_CNN:
     # Simple Encoder-Decoder on DRIVE
     LEARNING_RATE = 0.001
-    MAX_EPOCHS = 100
+    MAX_EPOCHS = 2
     loss_fn = bce_loss
 
     encdec_drive_model = EncDec(input_channels=3, output_channels=1)
@@ -134,7 +134,7 @@ if DRIVE_TRAIN_CNN:
 
 # Simple Encoder-Decoder on UNet
 LEARNING_RATE = 0.001
-MAX_EPOCHS = 100
+MAX_EPOCHS = 2 
 PADDING = 1 # 0 means no padding
 loss_fn = bce_loss
 
@@ -159,7 +159,7 @@ logger.success("Saved examples of predictions for UNet to 'figures'")
 
 # Simple UNet on DRIVE
 LEARNING_RATE = 0.001
-MAX_EPOCHS = 100
+MAX_EPOCHS = 2 
 PADDING = 1 # 0 means no padding
 loss_fn = bce_loss
 
@@ -193,14 +193,46 @@ logger.success("Saved examples of predictions for UNet of DRIVE to 'figures'")
 #display_image_mask_prediction(image.cpu(), mask.cpu(), predicted_mask.cpu(), "stitched_segmentation_mads.png")
 
 # Evaluation
+
+# Load Data without crop (i.e. whole images)
+transform_ph2_val_test = transforms.Compose([
+    transforms.ToTensor(),
+])
+
+transform_drive_val_test = transforms.Compose([
+    transforms.ToTensor(),
+])
+
+# Load PH2 validation and test datasets without cropping
+ph2_train_dataset = load_data('ph2', split='train', transform=transform_ph2_val_test, crop=False)
+ph2_val_dataset = load_data('ph2', split='val', transform=transform_ph2_val_test, crop=False)
+ph2_test_dataset = load_data('ph2', split='test', transform=transform_ph2_val_test, crop=False)
+
+# Load DRIVE validation and test datasets without cropping
+drive_train_dataset = load_data('drive', split='train', transform=transform_drive_val_test, crop=False)
+drive_val_dataset = load_data('drive', split='val', transform=transform_drive_val_test, crop=False)
+drive_test_dataset = load_data('drive', split='test', transform=transform_drive_val_test, crop=False)
+
+# Data loaders for PH2
+ph2_train_loader = DataLoader(ph2_train_dataset, batch_size=1, shuffle=False)
+ph2_val_loader = DataLoader(ph2_val_dataset, batch_size=1, shuffle=False)
+ph2_test_loader = DataLoader(ph2_test_dataset, batch_size=1, shuffle=False)
+
+# Data loaders for DRIVE
+drive_train_loader = DataLoader(drive_train_dataset, batch_size=1, shuffle=False)
+drive_val_loader = DataLoader(drive_val_dataset, batch_size=1, shuffle=False)
+drive_test_loader = DataLoader(drive_test_dataset, batch_size=1, shuffle=False)
+
+# Define PATCH_SIZE (should match the size used during training)
+PATCH_SIZE = CROP_SIZE[0] 
+
+# PH2 Dataset Evaluation
 metrics = [dice_overlap, IoU, accuracy, sensitivity, specificity]
-
-models = [UNetModel_ph2, encdec_ph2_model]  
+models = [UNetModel_ph2, encdec_ph2_model]
 model_names = ["UNet", "Simple Encoder-Decoder"]
+compare_models(models, model_names, ph2_val_loader, DEVICE, metrics, dataset_name="PH2", patch_size=PATCH_SIZE)
 
-compare_models(models, model_names, ph2_val_loader, DEVICE, metrics, dataset_name="PH2")
-
-models = [UNetModel_drive, encdec_drive_model]  
+# DRIVE Dataset Evaluation
+models = [UNetModel_drive, encdec_drive_model]
 model_names = ["UNet", "Simple Encoder-Decoder"]
-# plots
-compare_models(models, model_names, drive_val_loader, DEVICE, metrics, dataset_name="DRIVE")
+compare_models(models, model_names, drive_val_loader, DEVICE, metrics, dataset_name="DRIVE", patch_size=PATCH_SIZE)

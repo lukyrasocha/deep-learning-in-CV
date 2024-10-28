@@ -1,38 +1,49 @@
 import torch
 from utils.logger import logger
 import matplotlib.pyplot as plt
+from models.split_image import split_image_into_patches  # Ensure this import is present
 
-def evaluate_model(model, data_loader, device, metrics, dataset_name):
+def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size):
     model.eval()
     metric_totals = {metric.__name__: 0.0 for metric in metrics}
-    num_batches = len(data_loader)
+    num_images = 0
 
     with torch.no_grad():
         for images, masks in data_loader:
-            images, masks = images.to(device), masks.to(device)
-            outputs = model(images)  # Get raw logits from the model
-            probs = torch.sigmoid(outputs)  # Apply sigmoid once to get probabilities
-            preds = (probs > 0.5).float()  # Threshold to get binary predictions
+            images = images.to(device)
+            masks = masks.to(device)
 
+            # Since batch_size=1, remove the batch dimension
+            image = images.squeeze(0)
+            mask = masks.squeeze(0)
 
+            # Process the image by splitting into patches
+            predicted_mask = split_image_into_patches(image, patch_size, model)
+
+            assert mask.shape == predicted_mask.shape, "Predicted mask needs to have same shape as the target mask"
+
+            # Compute metrics
             for metric in metrics:
-                metric_value = metric(preds, masks)
+                metric_value = metric(predicted_mask.unsqueeze(0), mask.unsqueeze(0))
                 metric_totals[metric.__name__] += metric_value
 
-    metric_averages = {metric: total / num_batches for metric, total in metric_totals.items()}
+            num_images += 1
+
+    # Calculate average metrics
+    metric_averages = {metric: total / num_images for metric, total in metric_totals.items()}
 
     logger.info(f"Evaluation results for {dataset_name}:")
     for metric, average in metric_averages.items():
         logger.info(f"{metric}: {average:.4f}")
-    
+
     return metric_averages
 
-def compare_models(models, model_names, data_loader, device, metrics, dataset_name):
+def compare_models(models, model_names, data_loader, device, metrics, dataset_name, patch_size):
     all_metrics = {metric.__name__: [] for metric in metrics}
     
     for model, name in zip(models, model_names):
         logger.working_on(f"Evaluating model {name} on {dataset_name}")
-        metric_averages = evaluate_model(model, data_loader, device, metrics, dataset_name)
+        metric_averages = evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size)
         
         for metric, value in metric_averages.items():
             all_metrics[metric].append(value)
