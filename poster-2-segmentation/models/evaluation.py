@@ -36,7 +36,7 @@ def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size
 
     wandb.log({f"{dataset_name}/{metric}": average for metric, average in metric_averages.items()})
 
-    logger.success(f"Evaluation results for {dataset_name}:")
+    logger.info(f"Evaluation results for {dataset_name}:")
     for metric, average in metric_averages.items():
         logger.info(f"{metric}: {average:.4f}")
 

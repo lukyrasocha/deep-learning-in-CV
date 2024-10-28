@@ -40,6 +40,7 @@ def main():
 
     DEVICE = torch.device(args.device)
     logger.info(f"Running on {DEVICE}")
+    logger.info(f"JOB ID: {args.jobid}")
 
     # Initialize Weights & Biases (optional)
     wandb.init(project='project2-segmentation', config=args)
@@ -72,14 +73,14 @@ def main():
     assert len(np.unique(mask.numpy()[0])) <= 2, "Mask needs to have binary values (0,1)"
 
     # Data loaders
-    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True, num_workers = 4)
+    val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False, num_workers = 4)
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers = 4)
 
     logger.success("Data loaded")
 
     # Display some images
-    display_random_images_and_masks(train_dataset, figname=f"{args.data}_random.png", num_images=3)
+    display_random_images_and_masks(train_dataset, figname=f"{args.jobid}-{args.data}_random.png", num_images=3)
     logger.success(f"Saved example images and masks for {args.data.upper()} to 'figures'")
 
     # Model selection
@@ -103,32 +104,30 @@ def main():
 
     if args.visualize:
         visualize_predictions(model, train_loader, DEVICE,
-                              figname=f"{architecture}_{args.data}_predictions.png", num_images=5)
+                              figname=f"{args.jobid}-{architecture}-{args.data}_predictions.png", num_images=5)
         logger.success(f"Saved examples of predictions for {architecture} on {args.data.upper()} to 'figures'")
 
     # Evaluation
+
+    logger.working_on(f"Evaluating {architecture}...")
+
     # Reload datasets without cropping for evaluation
     train_dataset = load_data(args.data, split='train', transform=transform_val_test, crop=False)
     val_dataset = load_data(args.data, split='val', transform=transform_val_test, crop=False)
     test_dataset = load_data(args.data, split='test', transform=transform_val_test, crop=False)
 
     # Data loaders for evaluation
-    eval_train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False)
-    eval_val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False)
-    eval_test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    eval_train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_workers = 4)
+    eval_val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False, num_workers = 4)
+    eval_test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers = 4)
 
     # Evaluation metrics
     metrics = [dice_overlap, IoU, accuracy, sensitivity, specificity]
 
-    eval_config = {
-        "architecture": architecture,
-        "dataset": args.data.upper(),
-        "loss_function": "BinaryCrossEntropy",
-        "patch_size": args.crop_size,
-    }
-
     evaluate_model(model, eval_val_loader, DEVICE, metrics, dataset_name=args.data.upper(),
                    patch_size=args.crop_size, add_edge=True)
+
+    logger.success("Model evaluated and results logged to wandb")
 
     wandb.finish()
 

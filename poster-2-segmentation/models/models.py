@@ -9,6 +9,139 @@ class EncDec(nn.Module):
         super().__init__()
 
         # Encoder
+        self.enc_conv0 = nn.Sequential(
+            nn.Conv2d(input_channels, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
+        )
+        self.pool0 = nn.MaxPool2d(2, 2)
+
+        self.enc_conv1 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
+        self.pool1 = nn.MaxPool2d(2, 2)
+
+        self.enc_conv2 = nn.Sequential(
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+        self.pool2 = nn.MaxPool2d(2, 2)
+
+        self.enc_conv3 = nn.Sequential(
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU()
+        )
+        self.pool3 = nn.MaxPool2d(2, 2)
+
+        # Bottleneck
+        self.bottleneck_conv = nn.Sequential(
+            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(),
+            nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
+            nn.BatchNorm2d(1024),
+            nn.ReLU()
+        )
+
+        # Decoder
+        self.upconv0 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
+        self.dec_conv0 = nn.Sequential(
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU()
+        )
+
+        self.upconv1 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.dec_conv1 = nn.Sequential(
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU()
+        )
+
+        self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
+        self.dec_conv2 = nn.Sequential(
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
+
+        self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
+        self.dec_conv3 = nn.Sequential(
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU()
+        )
+
+        # Final Convolution
+        self.final_conv = nn.Conv2d(64, output_channels, kernel_size=1)
+
+    def forward(self, x):
+        # Encoder
+        e0 = self.enc_conv0(x)
+        e0_pooled = self.pool0(e0)
+
+        e1 = self.enc_conv1(e0_pooled)
+        e1_pooled = self.pool1(e1)
+
+        e2 = self.enc_conv2(e1_pooled)
+        e2_pooled = self.pool2(e2)
+
+        e3 = self.enc_conv3(e2_pooled)
+        e3_pooled = self.pool3(e3)
+
+        # Bottleneck
+        b = self.bottleneck_conv(e3_pooled)
+
+        # Decoder
+        d0 = self.upconv0(b)
+        d0 = self.dec_conv0(d0)
+
+        d1 = self.upconv1(d0)
+        d1 = self.dec_conv1(d1)
+
+        d2 = self.upconv2(d1)
+        d2 = self.dec_conv2(d2)
+
+        d3 = self.upconv3(d2)
+        d3 = self.dec_conv3(d3)
+
+        # Final Convolution
+        output = self.final_conv(d3)
+        return output  # Returning logits
+
+class EncDecOld(nn.Module):
+    def __init__(self, input_channels=3, output_channels=1):
+        super().__init__()
+
+        # Encoder
         self.enc_conv0 = nn.Conv2d(input_channels, 64, kernel_size=3, padding=1)
         self.pool0 = nn.MaxPool2d(2, 2)  
         
