@@ -5,7 +5,7 @@ import wandb
 from utils.logger import logger
 from models.split_image import split_image_into_patches  
 
-def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size, add_edge = False):
+def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size, name, add_edge = False):
     model.eval()
     metric_totals = {metric.__name__: 0.0 for metric in metrics}
     num_images = 0
@@ -34,9 +34,9 @@ def evaluate_model(model, data_loader, device, metrics, dataset_name, patch_size
     # Calculate average metrics
     metric_averages = {metric: total / num_images for metric, total in metric_totals.items()}
 
-    wandb.log({f"{dataset_name}/{metric}": average for metric, average in metric_averages.items()})
+    wandb.log({f"{name}/{dataset_name}/{metric}": average for metric, average in metric_averages.items()})
 
-    logger.info(f"Evaluation results for {dataset_name}:")
+    logger.info(f"Evaluation results for {name}-{dataset_name}:")
     for metric, average in metric_averages.items():
         logger.info(f"{metric}: {average:.4f}")
 

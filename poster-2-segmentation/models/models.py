@@ -5,45 +5,45 @@ import torch.nn.functional as F
 import torchvision.transforms.functional as tf 
 
 class EncDec(nn.Module):
-    def __init__(self, input_channels=3, output_channels=1):
+    def __init__(self, input_channels=3, output_channels=1, padding = 1):
         super().__init__()
 
         # Encoder
         self.enc_conv0 = nn.Sequential(
-            nn.Conv2d(input_channels, 64, kernel_size=3, padding=1),
+            nn.Conv2d(input_channels, 64, kernel_size=3, padding=padding),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, padding=padding),
             nn.BatchNorm2d(64),
             nn.ReLU()
         )
         self.pool0 = nn.MaxPool2d(2, 2)
 
         self.enc_conv1 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(64, 128, kernel_size=3, padding=padding),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, padding=padding),
             nn.BatchNorm2d(128),
             nn.ReLU()
         )
         self.pool1 = nn.MaxPool2d(2, 2)
 
         self.enc_conv2 = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.Conv2d(128, 256, kernel_size=3, padding=padding),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.Conv2d(256, 256, kernel_size=3, padding=padding),
             nn.BatchNorm2d(256),
             nn.ReLU()
         )
         self.pool2 = nn.MaxPool2d(2, 2)
 
         self.enc_conv3 = nn.Sequential(
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.Conv2d(256, 512, kernel_size=3, padding=padding),
             nn.BatchNorm2d(512),
             nn.ReLU(),
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.Conv2d(512, 512, kernel_size=3, padding=padding),
             nn.BatchNorm2d(512),
             nn.ReLU()
         )
@@ -51,10 +51,10 @@ class EncDec(nn.Module):
 
         # Bottleneck
         self.bottleneck_conv = nn.Sequential(
-            nn.Conv2d(512, 1024, kernel_size=3, padding=1),
+            nn.Conv2d(512, 1024, kernel_size=3, padding=padding),
             nn.BatchNorm2d(1024),
             nn.ReLU(),
-            nn.Conv2d(1024, 1024, kernel_size=3, padding=1),
+            nn.Conv2d(1024, 1024, kernel_size=3, padding=padding),
             nn.BatchNorm2d(1024),
             nn.ReLU()
         )
@@ -62,40 +62,40 @@ class EncDec(nn.Module):
         # Decoder
         self.upconv0 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
         self.dec_conv0 = nn.Sequential(
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.Conv2d(512, 512, kernel_size=3, padding=padding),
             nn.BatchNorm2d(512),
             nn.ReLU(),
-            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.Conv2d(512, 512, kernel_size=3, padding=padding),
             nn.BatchNorm2d(512),
             nn.ReLU()
         )
 
         self.upconv1 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
         self.dec_conv1 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.Conv2d(256, 256, kernel_size=3, padding=padding),
             nn.BatchNorm2d(256),
             nn.ReLU(),
-            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.Conv2d(256, 256, kernel_size=3, padding=padding),
             nn.BatchNorm2d(256),
             nn.ReLU()
         )
 
         self.upconv2 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
         self.dec_conv2 = nn.Sequential(
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, padding=padding),
             nn.BatchNorm2d(128),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, padding=padding),
             nn.BatchNorm2d(128),
             nn.ReLU()
         )
 
         self.upconv3 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
         self.dec_conv3 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, padding=padding),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, padding=padding),
             nn.BatchNorm2d(64),
             nn.ReLU()
         )
@@ -186,6 +186,11 @@ class EncDecOld(nn.Module):
 
         # Bottleneck
         b = F.relu(self.bottleneck_conv(e3_pooled))
+
+        # Added after getting this error 
+        # Ensure 4D input for upsampling
+        if b.dim() == 3:
+            b = b.unsqueeze(0)
 
         # Decoder
         d0 = F.relu(self.dec_conv0(self.upsample0(b)))
