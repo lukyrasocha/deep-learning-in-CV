@@ -126,6 +126,7 @@ def visualize_weak_supervision_predictions(model,
     CLICKS,
     figname="weak_supervision_predictions.png", 
     num_images=5, SAMPLIG='random'):
+    
     model.eval()
     model.to(device)
     images_shown = 0
@@ -135,12 +136,9 @@ def visualize_weak_supervision_predictions(model,
 
     with torch.no_grad():
         for batch in data_loader:
-            #print("BATCH********")
-            #print(batch)
-            #print("BATCH********")
             images, masks = batch  # Adjusted to two elements
             weak_supervision_masks = masks
-            #print(masks)
+            
             if images_shown >= num_images:
                 break
 
@@ -148,15 +146,21 @@ def visualize_weak_supervision_predictions(model,
             outputs = model(images)
             preds = torch.sigmoid(outputs)
             preds = (preds > 0.5).float()
-            #print('Unique values in predictions:', torch.unique(preds))
 
             for i in range(images.size(0)):
                 if images_shown >= num_images:
                     break
 
+                # Convert images to numpy for plotting
                 image_np = images[i].cpu().permute(1, 2, 0).numpy()
                 weak_supervision_mask_np = weak_supervision_masks[i].cpu().squeeze().numpy()
                 pred_np = preds[i].cpu().squeeze().numpy()
+
+                # Denormalize the image
+                mean = np.array([0.7475, 0.5721, 0.4836])
+                std = np.array([0.2004, 0.1972, 0.2023])
+                image_np = (image_np * std + mean) * 255  # Rescale back to [0, 255]
+                image_np = np.clip(image_np, 0, 255).astype(np.uint8)  # Ensure valid range and convert to uint8
 
                 # Handle NaNs in weak supervision mask
                 masked_ws_mask = np.ma.masked_invalid(weak_supervision_mask_np)
@@ -167,8 +171,7 @@ def visualize_weak_supervision_predictions(model,
                 idx = images_shown
                 # Original Image
                 plt.subplot(num_images, 3, idx * 3 + 1)
-                #plt.imshow(image_np)
-                plt.imshow((image_np * 255).astype(np.uint8))
+                plt.imshow(image_np)
                 plt.axis('off')
                 plt.title("Original Image")
 
@@ -190,6 +193,7 @@ def visualize_weak_supervision_predictions(model,
     plt.savefig(f"figures/{figname}_{CLICKS}_clicks and {SAMPLIG} sampling.png")
     plt.show()
 
+
 def display_random_images_and_weak_supervision_masks(dataset, figname, num_images=3):
     random.seed(42)
     random_indices = random.sample(range(len(dataset)), num_images)
@@ -198,28 +202,31 @@ def display_random_images_and_weak_supervision_masks(dataset, figname, num_image
     for i, idx in enumerate(random_indices):
         # Retrieve image and original mask
         image, mask = dataset[idx]
-        # print shapes 
+        
+        # Print shapes 
         print(f"Image shape: {image.shape}")
         print(f"Mask shape: {mask.shape}")
+        
         # Print unique values in mask 
         print(f"Unique values in mask {idx}: {np.unique(mask.numpy())}")
 
         # Convert image and mask for plotting
         image_np = image.permute(1, 2, 0).cpu().numpy()  # CxHxW to HxWxC
         mask_np = mask.squeeze(0).cpu().numpy()  # [1, H, W] to [H, W]
-        # print shapes
+        
+        # Print shapes
         print(f"Image shape: {image_np.shape}")
         print(f"Mask shape: {mask_np.shape}")
-
         
-        # Convert to NumPy and mask NaN values
+        # Denormalize the image
+        mean = np.array([0.7475, 0.5721, 0.4836])
+        std = np.array([0.2004, 0.1972, 0.2023])
+        image_np = (image_np * std + mean) * 255  # Rescale back to [0, 255]
+        image_np = np.clip(image_np, 0, 255).astype(np.uint8)  # Ensure valid range and convert to uint8
+
+        # Configure weak supervision mask and handle NaNs
         weak_supervision_mask_np = mask_np  # Already in [H, W]
         masked_image = np.ma.masked_where(np.isnan(weak_supervision_mask_np), weak_supervision_mask_np)
-        # print shapes
-        print(f"Weak Supervision Mask shape: {weak_supervision_mask_np.shape}")
-        print(f"Masked Image shape: {masked_image.shape}")
-
-
         
         # Configure the colormap for NaN values
         cmap = plt.cm.gray
@@ -227,8 +234,7 @@ def display_random_images_and_weak_supervision_masks(dataset, figname, num_image
 
         # Plot the original image
         plt.subplot(num_images, 2, 2 * i + 1)
-        #plt.imshow(image_np)
-        plt.imshow((image_np * 255).astype(np.uint8))
+        plt.imshow(image_np)
         plt.axis('off')
         plt.title(f"Image {idx}")
 
