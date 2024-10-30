@@ -1,6 +1,6 @@
 # Project 2: Segmentation :camera:
 
-This project is about image segmentation. The goal is to segment two datasets. The vessel dataset and the PH2 dataset. The vessel dataset is a dataset of retinal images. The PH2 dataset is a dataset of skin lesions. The goal is to segment the vessels in the retinal images and the skin lesions in the PH2 dataset.
+This project is about object detection. The dataset for this project is called Potholes and consist of images of holes in roads. The task is therefore to detect and locate these holes.
 
 ## Setup :wrench:
 
@@ -27,19 +27,19 @@ git clone git@github.com:lukyrasocha/02516-intro-to-dl-in-cv.git
 **2. Create a virtual environment**
 
 ```bash
-python -m venv ~/venv/project2_venv
+python -m venv ~/venv/project3_venv
 ```
 
 **3. Activate the virtual environment**
 
 ```bash
-source ~/venv/project2_venv/bin/activate
+source ~/venv/project3_venv/bin/activate
 ```
 
 **4. Change directories**
 
 ```bash
-cd 02516-intro-to-dl-in-cv/poster-2-segmentation
+cd 02516-intro-to-dl-in-cv/poster-3-object-detection
 ```
 **5. Install the requirements**
 
