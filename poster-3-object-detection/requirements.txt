@@ -1,0 +1,7 @@
+torch
+rich
+torchvision
+pillow
+glob2
+wandb
+matplotlib
