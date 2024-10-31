@@ -7,6 +7,7 @@ from torch.utils.data import Dataset, DataLoader
 import xml.etree.ElementTree as ET
 from torchvision import transforms
 from visualize import visualize_samples
+from tensordict import TensorDict
 # balba
 
 class Potholes(Dataset):
@@ -19,13 +20,13 @@ class Potholes(Dataset):
         self.folder_path = os.path.join(base_path, folder_path)
         self.transform = transform
 
-        print("Looking for files in:", self.folder_path)
+
         if not os.path.exists(self.folder_path):
+            print("Looking for files in:", self.folder_path)
             raise FileNotFoundError(f"Directory not found: {self.folder_path}")
 
         self.image_paths = sorted(glob.glob(os.path.join(self.folder_path, "img-*.jpg")))
         self.xml_paths = sorted(glob.glob(os.path.join(self.folder_path, "img-*.xml")))
-        print(f"Found {len(self.image_paths)} images and {len(self.xml_paths)} XML files.")
         assert len(self.image_paths) == len(self.xml_paths), 'Number of images and xml files does not match'
 
     def __len__(self):
@@ -41,14 +42,17 @@ class Potholes(Dataset):
         tree = ET.parse(xml_path)
         root = tree.getroot()
 
-        # Initialize lists for bounding boxes and labels
-        boxes = []
-        labels = []
+        # Initialize lists for the target
+        targets = []
 
         # Iterate through each object in the XML file
         for obj in root.findall('object'):
-            label = obj.find('name').text
-            labels.append(label)
+        
+            #If the box is a pothole the label is 1 (True)
+            if obj.find('name').text == 'pothole':
+                label = 1
+            else:
+                label = 0
 
             # Extract bounding box coordinates
             bndbox = obj.find('bndbox')
@@ -57,28 +61,22 @@ class Potholes(Dataset):
             xmax = int(bndbox.find('xmax').text)
             ymax = int(bndbox.find('ymax').text)
 
-            # Append bounding box as [xmin, ymin, xmax, ymax]
-            boxes.append([xmin, ymin, xmax, ymax])
+            # Apply transformations and reshape so the boxes match to the new size
+            if self.transform:
+                image = self.transform(image)
+                new_height, new_width = image.shape[1], image.shape[2]
 
-        # Convert to tensors
-        boxes = torch.tensor(boxes, dtype=torch.float32)
-        labels = torch.tensor([1 if label == 'pothole' else 0 for label in labels], dtype=torch.int64)
+                xmin *= new_width / original_width
+                xmax *= new_width / original_width
+                ymin *= new_height / original_height
+                ymax *= new_height / original_height
 
-        # Apply transformations
-        if self.transform:
-            image = self.transform(image)
-            new_height, new_width = image.shape[1], image.shape[2]
+            # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
+            directory = TensorDict({'xmin' : xmin, 'ymin': ymin, 'xmax': xmax, 'ymax': ymax, 'labels': label})
+            targets.append(directory)
 
-            # Scale boxes
-            scale_x = new_width / original_width
-            scale_y = new_height / original_height
-            boxes[:, [0, 2]] = boxes[:, [0, 2]] * scale_x
-            boxes[:, [1, 3]] = boxes[:, [1, 3]] * scale_y
 
-        target = {'boxes': boxes, 'labels': labels}
-        #print(f"Loaded image {idx} with {len(boxes)} bounding boxes")
-
-        return image, target
+        return image, targets
 
 def collate_fn(batch):
     images = []
@@ -89,8 +87,10 @@ def collate_fn(batch):
     images = torch.stack(images, dim=0)
     return images, targets
 
+def load_data(split, transform, folder_path='Potholes/annotated-images', seed=42):
+    None
 
-# Function to benchmark the dataloader
+ #Function to benchmark the dataloader
 
 #def benchmark_dataloader(dataloader, num_batches=100):
 #    start_time = time.time()
@@ -115,6 +115,17 @@ if __name__ == "__main__":
 
     print("Number of samples in the dataset:", len(potholes_dataset))
     print("Number of batches in the dataloader:", len(dataloader))
+
+
+    sample_image, sample_targets = potholes_dataset[0]  
+    print("Sample Image Type:", type(sample_image))
+    print("Sample Targets Type:", type(sample_targets))
+
+    # Check the type of individual targets
+    target = sample_targets[0]
+    print("Type of individual target:", type(target))
+    print("Type of xmin:", type(target['xmin']))
+    print("Type of labels:", type(target['labels']))
 
     # Visualize samples
     visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
