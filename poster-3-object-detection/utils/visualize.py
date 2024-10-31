@@ -1,12 +1,14 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+import os
+
 
 color_primary = '#990000'  # University red
 color_secondary = '#2F3EEA'  # University blue
 color_tertiary = '#F6D04D'  # University gold
 
-def visualize_samples(dataloader,figname, num_images=4, class_names=['Not Pothole', 'Pothole'], box_thickness=5):
+def visualize_samples(dataloader,figname, num_images=4, box_thickness=5): # add num_casses class_names=['Background', 'Pothole'] if you want to vislize the labels 
     images, targets = next(iter(dataloader))
     plt.figure(figsize=(20, 10))
 
@@ -42,9 +44,21 @@ def visualize_samples(dataloader,figname, num_images=4, class_names=['Not Pothol
 
         plt.axis('off')
 
-    plt.suptitle('Sample Training Images with Bounding Boxes', fontsize=42, color=color_primary, y=0.81)
+        # Build the path to save the figure in the parent 'figures' directory
+    plt.suptitle('Sample Training Images with Bounding Boxes', fontsize=42, color='red', y=0.81)
     plt.tight_layout()
-    plt.savefig(f"figures/{figname}.svg", dpi=300, bbox_inches='tight')
-    plt.show()
 
-    # print hello
+    # Build the path to save the figure in the parent 'figures' directory
+    current_dir = os.path.dirname(__file__)
+    parent_dir = os.path.abspath(os.path.join(current_dir, '..'))
+    figures_dir = os.path.join(parent_dir, 'figures')
+
+    # Ensure the 'figures' directory exists
+    os.makedirs(figures_dir, exist_ok=True)
+
+    # Full path to save the figure
+    fig_path = os.path.join(figures_dir, f"{figname}.svg")
+
+    # Save the figure
+    plt.savefig(fig_path, dpi=300, bbox_inches='tight')
+    plt.show()

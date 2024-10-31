@@ -117,7 +117,7 @@ if __name__ == "__main__":
     print("Number of batches in the dataloader:", len(dataloader))
 
     # Visualize samples
-    visualize_samples(dataloader, num_images=4, class_names=['Background', 'Pothole'], figname='pothole_samples', box_thickness=5)
+    visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
     
 
 
