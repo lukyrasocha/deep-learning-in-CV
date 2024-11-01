@@ -5,3 +5,4 @@ pillow
 glob2
 wandb
 matplotlib
+tensordict
