@@ -123,7 +123,14 @@ class Potholes(Dataset):
 def load_data(split, transform, folder_path='Potholes', seed=42):
     None
 
-
+def collate_fn(batch):
+    images = []
+    targets = []
+    for image, target in batch:
+        images.append(image)
+        targets.append(target)
+    images = torch.stack(images, dim=0)
+    return images, targets
 
 
 
