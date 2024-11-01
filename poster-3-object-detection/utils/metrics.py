@@ -41,17 +41,39 @@ def best_proposal(proposals, ground_truth_box, return_box=False):
         if iou > best_iou:
             best_iou = iou
             best_box = prop
-
-    return (best_iou, best_box) if return_box else best_iou
+    
+    if return_box:
+        return best_iou, best_box
+    else:
+        return best_iou
 
 
 def abo(ground_truth_boxes, proposals):
     '''
     Gets the average best IoU over all objects in an image.
-    (The ABO in MABO)
     '''
     if not ground_truth_boxes:
         return 0
 
     # Calculate the sum of best IoUs for each ground truth box
-    return sum(best_proposal(proposals, gt_box) for gt_box in ground_truth_boxes) / len(ground_truth_boxes)
+    abo = sum(best_proposal(proposals, gt_box) for gt_box in ground_truth_boxes) / len(ground_truth_boxes)
+
+    return abo
+
+def mabo():
+    '''
+    Returns the mean abo for all classes in an image.
+    '''
+    return
+
+def recall(ground_truth_boxes, proposals, k=0.5):
+    '''
+    Returns the recall percentage for all objects of one class.
+    '''
+    if not ground_truth_boxes:
+        return 0
+
+    # Count ground truth boxes with at least one "good" proposal
+    num_good = sum(1 for gt_box in ground_truth_boxes if best_proposal(proposals, gt_box) > k)
+    recall = num_good / len(ground_truth_boxes)
+    return recall
