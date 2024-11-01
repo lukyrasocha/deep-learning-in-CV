@@ -2,13 +2,15 @@ import os
 import glob
 import time
 import torch
+import json
+import xml.etree.ElementTree as ET
+
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
-import xml.etree.ElementTree as ET
 from torchvision import transforms
 from visualize import visualize_samples
 from tensordict import TensorDict
-import json
+from torch.utils.data import default_collate
 
 
 class Potholes(Dataset):
@@ -160,8 +162,6 @@ class Potholes(Dataset):
             })
 
             targets.append(directory)
-
-
         return image, targets
 
 
@@ -188,16 +188,33 @@ def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Poth
 
     return train_data, val_data, test_data
 
+def custom_collate_fn(batch):
+    """
+    Custom collate function for a PyTorch DataLoader, used to process a batch of data 
+    where each sample contains an image and its corresponding targets.
+    It is needed because the deafult collate function expect dimensions of same size
 
-def collate_fn(batch):
+    Parameters:
+        batch (list of tuples): A list where each element is a tuple (image, target).
+            - image: A tensor representing the image.
+            - target: A list or dictionary containing the bounding box coordinates 
+                      and labels for objects detected in the image.
+
+    Returns:
+        tuple: A tuple containing:
+            - images (Tensor): A stacked tensor of images with shape 
+              (batch_size, channels, height, width), created using PyTorch's `default_collate`.
+            - targets (list): A list of original target annotations, one for each image.
+    """
+
     images = []
     targets = []
-    for image, target in batch:
-        images.append(image)
-        targets.append(target)
-    images = torch.stack(images, dim=0)
-    return images, targets
 
+    for image, target in batch:
+        images.append(image)  # Append the image part to the images list
+        targets.append(target)  # Append the target part to the targets list
+
+    return default_collate(images), targets  # Return stacked images and original targets
 
 
 if __name__ == "__main__":
@@ -210,7 +227,7 @@ if __name__ == "__main__":
     device = 'cpu'
     # Initialize the dataset and dataloader
     potholes_dataset = Potholes(split = 'Train', transform=transform, folder_path='Potholes')
-    dataloader = DataLoader(potholes_dataset, batch_size=32, shuffle=True, num_workers=8, collate_fn=collate_fn)
+    dataloader = DataLoader(potholes_dataset, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
 
     print("\nNumber of samples in the dataset:", len(potholes_dataset))
     print("Number of batches in the dataloader:", len(dataloader))
@@ -250,6 +267,22 @@ if __name__ == "__main__":
 
     print("\nBounding box coordinates:", box['xmin'], box['ymin'], box['xmax'], box['ymax'])
     print("Label:", box['labels'])
+
+    #The following code is used to show that the output from costum_collate_fn works
+    device = 'cpu'
+    for batch_images, batch_targets in dataloader:
+        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
+        print("Batch targets:", batch_targets)
+        print("\nTargets for each image in the batch:")
+
+        # Iterate through the targets to show correspondence with images
+        for i, targets in enumerate(batch_targets):
+            print(f"Image {i} has {len(targets)} target(s):")
+            for target in targets:
+                print(f"  Bounding box: {target['xmin']:.3g}, {target['ymin']:.3g}, {target['xmax']:.3g}, {target['ymax']:.3g}, Label: {target['labels']}")
+            if i >= 5:
+                break # only show 5 images
+        break         # Only show one batch
 
 
 ###############################################################
