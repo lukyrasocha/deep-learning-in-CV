@@ -1,81 +1,157 @@
+import os
 import glob
+import time
 import torch
-import os
-import random
-
-from torch.utils.data import Dataset
 from PIL import Image
-from torchvision import transforms
-import numpy as np
-import json
-
-
-import os
+from torch.utils.data import Dataset, DataLoader
 import xml.etree.ElementTree as ET
+from torchvision import transforms
+from visualize import visualize_samples
+from tensordict import TensorDict
+# balba
 
-def parse_annotation(xml_file):
-    tree = ET.parse(xml_file)
-    root = tree.getroot()
+class Potholes(Dataset):
+    def __init__(self, transform=None, folder_path='Potholes/annotated-images'):
+        # This ensures that we can access the dataset from the root of the repository
+        # Since we do not have the dataset in the same directory as provided by the 
+        # teachers to us in a previous assignment and the root folder would be 
+        # different to all of us. This takes care of that. 
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        self.folder_path = os.path.join(base_path, folder_path)
+        self.transform = transform
 
-    # Get the image filename
-    filename = root.find('filename').text
 
-    # Initialize list to hold all objects in the image
-    objects = []
+        if not os.path.exists(self.folder_path):
+            print("Looking for files in:", self.folder_path)
+            raise FileNotFoundError(f"Directory not found: {self.folder_path}")
 
-    # Iterate over all object elements in the XML
-    for obj in root.findall('object'):
-        category = obj.find('name').text
+        self.image_paths = sorted(glob.glob(os.path.join(self.folder_path, "img-*.jpg")))
+        self.xml_paths = sorted(glob.glob(os.path.join(self.folder_path, "img-*.xml")))
+        assert len(self.image_paths) == len(self.xml_paths), 'Number of images and xml files does not match'
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        # Load the image and convert to RGB
+        image = Image.open(self.image_paths[idx]).convert('RGB')
+        original_width, original_height = image.size
+
+        # Load and parse the XML annotation
+        xml_path = self.xml_paths[idx]
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+
+        # Initialize lists for the target
+        targets = []
+
+        # Iterate through each object in the XML file
+        for obj in root.findall('object'):
         
-        # Get bounding box coordinates
-        bndbox = obj.find('bndbox')
-        x_min = int(bndbox.find('xmin').text)
-        y_min = int(bndbox.find('ymin').text)
-        x_max = int(bndbox.find('xmax').text)
-        y_max = int(bndbox.find('ymax').text)
-        
-        # Add the object info to the list
-        objects.append({
-            "category": category,
-            "x_min": x_min,
-            "x_max": x_max,
-            "y_min": y_min,
-            "y_max": y_max
-        })
+            #If the box is a pothole the label is 1 (True)
+            if obj.find('name').text == 'pothole':
+                label = 1
+            else:
+                label = 0
 
-    # Return the image info and objects list
-    return {
-        "image_name": filename,
-        "objects": objects
-    }
+            # Extract bounding box coordinates
+            bndbox = obj.find('bndbox')
+            xmin = int(bndbox.find('xmin').text)
+            ymin = int(bndbox.find('ymin').text)
+            xmax = int(bndbox.find('xmax').text)
+            ymax = int(bndbox.find('ymax').text)
 
-def parse_annotations_from_folder(folder_path):
-    data = []
+            # Apply transformations and reshape so the boxes match to the new size
+            if self.transform:
+                image = self.transform(image)
+                new_height, new_width = image.shape[1], image.shape[2]
+
+                xmin *= new_width / original_width
+                xmax *= new_width / original_width
+                ymin *= new_height / original_height
+                ymax *= new_height / original_height
+
+            # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
+            directory = TensorDict({'xmin' : xmin, 'ymin': ymin, 'xmax': xmax, 'ymax': ymax, 'labels': label})
+            targets.append(directory)
+
+
+        return image, targets
+
+def collate_fn(batch):
+    images = []
+    targets = []
+    for image, target in batch:
+        images.append(image)
+        targets.append(target)
+    images = torch.stack(images, dim=0)
+    return images, targets
+
+def load_data(split, transform, folder_path='Potholes/annotated-images', seed=42):
+    None
+
+ #Function to benchmark the dataloader
+
+#def benchmark_dataloader(dataloader, num_batches=100):
+#    start_time = time.time()
+#    for i, (images, targets) in enumerate(dataloader):
+#        if i >= num_batches:
+#            break
+#    end_time = time.time()
+#    return end_time - start_time
+
+
+
+if __name__ == "__main__":
+    # Define any transforms
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+    ])
+
+    # Initialize the dataset and dataloader
+    potholes_dataset = Potholes(transform=transform, folder_path='Potholes/annotated-images')
+    dataloader = DataLoader(potholes_dataset, batch_size=32, shuffle=True, num_workers=8, collate_fn=collate_fn)
+
+    print("Number of samples in the dataset:", len(potholes_dataset))
+    print("Number of batches in the dataloader:", len(dataloader))
+
+
+    sample_image, sample_targets = potholes_dataset[0]  
+    print("Sample Image Type:", type(sample_image))
+    print("Sample Targets Type:", type(sample_targets))
+
+    # Check the type of individual targets
+    target = sample_targets[0]
+    print("Type of individual target:", type(target))
+    print("Type of xmin:", type(target['xmin']))
+    print("Type of labels:", type(target['labels']))
+
+    # Visualize samples
+    visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
     
-    # Loop through all files in the folder
-    for file_name in os.listdir(folder_path):
-        if file_name.endswith('.xml'):
-            # Parse the XML file
-            xml_file = os.path.join(folder_path, file_name)
-            image_data = parse_annotation(xml_file)
-            data.append(image_data)
-    
-    return data
-
-#print(os.path.dirname(os.path.abspath(__file__)))
-path, _ = os.path.split(os.path.dirname(os.path.abspath(__file__)))
-
-folder_path = os.path.join(path, "Potholes/annotated-images")
 
 
-data = parse_annotations_from_folder(folder_path)
 
+###############################################################
+# Test for optimal num of workers in DataLoader
 
-# Print the result
-#for image_data in data:
-#    print(image_data)
+# BEST IN NUM_WORKERS = 8
 
-
-#with open('data.json', 'w') as f:
-#    json.dump(data, f)
+    #batch_size = 32
+    #num_workers_list = [0, 2, 4, 8, 16, 32, 64]
+#
+    #for num_workers in num_workers_list:
+    #    dataloader = DataLoader(
+    #        potholes_dataset,
+    #        batch_size=batch_size,
+    #        shuffle=True,
+    #        num_workers=num_workers,
+    #        collate_fn=collate_fn,
+    #    )
+    #    duration = benchmark_dataloader(dataloader)
+    #    print(f"num_workers: {num_workers}, Time taken: {duration:.2f} seconds")
+#
+#
+    #benchmark_dataloader(dataloader, num_batches=64)
 
