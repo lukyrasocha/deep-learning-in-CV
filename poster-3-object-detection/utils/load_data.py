@@ -89,7 +89,6 @@ class Potholes(Dataset):
         else:
             image = transform.ToTensor(image)
 
-
         # Iterate through each object in the XML file
         for obj in root.findall('object'):
         
@@ -161,27 +160,27 @@ if __name__ == "__main__":
 ###############################################################
     #Function to benchmark the dataloader
 
-    #def benchmark_dataloader(dataloader, num_batches=100):
-    #    start_time = time.time()
-    #    for i, (images, targets) in enumerate(dataloader):
-    #        if i >= num_batches:
-    #            break
-    #    end_time = time.time()
-    #    return end_time - start_time
-    ##Test for optimal num of workers in DataLoader
-    ##BEST IN NUM_WORKERS = 8
-    #batch_size = 32
-    #num_workers_list = [0, 2, 4, 8, 16, 32, 64]
-    #for num_workers in num_workers_list:
-    #    dataloader = DataLoader(
-    #        potholes_dataset,
-    #        batch_size=batch_size,
-    #        shuffle=True,
-    #        num_workers=num_workers,
-    #    )
-    #    duration = benchmark_dataloader(dataloader)
-    #    print(f"num_workers: {num_workers}, Time taken: {duration:.2f} seconds")
-    #
-    #
-    #benchmark_dataloader(dataloader, num_batches=64)
-    #
+    def benchmark_dataloader(dataloader, num_batches=100):
+        start_time = time.time()
+        for i, (images, targets) in enumerate(dataloader):
+            if i >= num_batches:
+                break
+        end_time = time.time()
+        return end_time - start_time
+    #Test for optimal num of workers in DataLoader
+    #BEST IN NUM_WORKERS = 8
+    batch_size = 32
+    num_workers_list = [0, 2, 4, 8, 16, 32, 64]
+    for num_workers in num_workers_list:
+        dataloader = DataLoader(
+            potholes_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=num_workers,
+        )
+        duration = benchmark_dataloader(dataloader)
+        print(f"num_workers: {num_workers}, Time taken: {duration:.2f} seconds")
+    
+    
+    benchmark_dataloader(dataloader, num_batches=64)
+    
