@@ -207,14 +207,14 @@ def custom_collate_fn(batch):
             - targets (list): A list of original target annotations, one for each image.
     """
 
-    images = []
-    targets = []
+    batch_images = []
+    batch_targets = []
 
     for image, target in batch:
-        images.append(image)  # Append the image part to the images list
-        targets.append(target)  # Append the target part to the targets list
+        batch_images.append(image)  # Append the image part to the images list
+        batch_targets.append(target)  # Append the target part to the targets list
 
-    return default_collate(images), targets  # Return stacked images and original targets
+    return default_collate(batch_images), batch_targets  # Return stacked images and original targets
 
 
 if __name__ == "__main__":
