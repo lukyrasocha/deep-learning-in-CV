@@ -4,11 +4,11 @@ import time
 import torch
 import json
 import xml.etree.ElementTree as ET
+import random
 
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from visualize import visualize_samples
 from tensordict import TensorDict
 from torch.utils.data import default_collate
 
@@ -57,14 +57,14 @@ class Potholes(Dataset):
 
         #If the validation percentage for the split is set, it will create a validation set based on the existing training set
         if val_percent is not None:
-
-            #Get all the training files and shuffel them
+            #Get all the files to calculate the precentage for validation set
+            number_of_all_files = len(sorted(glob.glob(os.path.join(self.folder_path, "annotated-images/img-*.jpg")))) #Get the number of all the files in the folder 
             train_files = splits['train']
             random.seed(seed)
             random.shuffle(train_files)  
 
             # Calculate the number of validation samples
-            val_count = int(len(train_files) * val_percent)
+            val_count = int(number_of_all_files * val_percent/100)
             new_val_files = train_files[:val_count]
             new_train_files = train_files[val_count:]
 
@@ -165,7 +165,7 @@ class Potholes(Dataset):
         return image, targets
 
 
-def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Potholes'):
+def load_data(val_percent=None, seed=42, transform=None, folder_path='Potholes'):
     """
     Loads the Potholes dataset for training, validation, and testing.
 
@@ -183,8 +183,8 @@ def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Poth
             - test_data (Potholes): The dataset for testing.
     """
     train_data = Potholes(split='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-    val_data = Potholes(val='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-    test_data = Potholes(test='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+    val_data = Potholes(split='val', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+    test_data = Potholes(split='test', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
 
     return train_data, val_data, test_data
 
@@ -272,7 +272,6 @@ if __name__ == "__main__":
     device = 'cpu'
     for batch_images, batch_targets in dataloader:
         print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
-        print("Batch targets:", batch_targets)
         print("\nTargets for each image in the batch:")
 
         # Iterate through the targets to show correspondence with images
@@ -283,6 +282,14 @@ if __name__ == "__main__":
             if i >= 5:
                 break # only show 5 images
         break         # Only show one batch
+
+    #The following code is used to check that the precentage for train, valdiation and test is working
+    train_dataset, val_dataset, test_dataset = load_data(val_percent=20, seed=42, transform=transform)
+    total = len(train_dataset) + len(val_dataset) + len(test_dataset)
+    print('The split for train is:', len(train_dataset)/total)
+    print('The split for validation is:', len(val_dataset)/total)
+    print('The split for test is:', len(test_dataset)/total)
+
 
 
 ###############################################################
