@@ -290,8 +290,6 @@ if __name__ == "__main__":
     print('The split for validation is:', len(val_dataset)/total)
     print('The split for test is:', len(test_dataset)/total)
 
-
-
 ###############################################################
     #Function to benchmark the dataloader
 
