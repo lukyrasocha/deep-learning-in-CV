@@ -154,11 +154,11 @@ class Potholes(Dataset):
 
             # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
             directory = TensorDict({
-                'xmin'  : torch.tensor(xmin, dtype=torch.float32, device=device),
-                'ymin'  : torch.tensor(ymin, dtype=torch.float32, device=device),
-                'xmax'  : torch.tensor(xmax, dtype=torch.float32, device=device),
-                'ymax'  : torch.tensor(ymax, dtype=torch.float32, device=device),
-                'labels': torch.tensor(label, dtype=torch.int64, device=device)
+                'xmin'  : torch.tensor(xmin, dtype=torch.float32),
+                'ymin'  : torch.tensor(ymin, dtype=torch.float32),
+                'xmax'  : torch.tensor(xmax, dtype=torch.float32),
+                'ymax'  : torch.tensor(ymax, dtype=torch.float32),
+                'labels': torch.tensor(label, dtype=torch.int64)
             })
 
             targets.append(directory)
@@ -214,7 +214,7 @@ def custom_collate_fn(batch):
         images.append(image)  # Append the image part to the images list
         targets.append(target)  # Append the target part to the targets list
 
-    return default_collate(images), targets  # Return stacked images and original targets
+    return custom_collate_fn(images), targets  # Return stacked images and original targets
 
 
 if __name__ == "__main__":
@@ -244,7 +244,7 @@ if __name__ == "__main__":
     print("Type of xmin:", type(target['xmin']))
     print("Type of labels:", type(target['labels']))
     #Visualize samples
-    #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
+    visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
     
 
 
