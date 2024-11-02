@@ -2,21 +2,44 @@ import os
 import glob
 import time
 import torch
+import json
+import xml.etree.ElementTree as ET
+
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
-import xml.etree.ElementTree as ET
 from torchvision import transforms
 from visualize import visualize_samples
 from tensordict import TensorDict
 import json
-import cv2 as cv
-import argparse 
-import random
-
 
 
 class Potholes(Dataset):
-    def __init__(self, split='train', val_percentage=None, seed=42, transform=None, folder_path='Potholes'):
+    """
+    A PyTorch Dataset class for loading images and annotations of potholes.
+
+    Attributes:
+        folder_path (str): Path to the dataset folder with the splits.json file, annotated-images folder and README.md.
+        transform (callable, optional): Optional transform to be applied on a sample.
+        image_paths (list): List of file paths for images.
+        xml_paths (list): List of file paths for corresponding XML annotation files.
+
+    Parameters:
+        split (str): The dataset split to use ('train', 'val', or 'test'). Defaults to 'train'.
+        val_percent (int, optional): The proportion of training data to use for validation.
+                                        If provided, the dataset will split the training data.
+        seed (int): Seed for random shuffling of the training data. Defaults to 42.
+        transform (callable, optional): A function/transform to apply to the images.
+
+    Raises:
+        FileNotFoundError: If the specified folder path does not exist.
+        AssertionError: If the number of image paths does not match the number of XML paths.
+
+    Methods:
+        __len__(): Returns the total number of samples in the dataset.
+        __getitem__(idx): Retrieves a sample (image and targets) from the dataset at the given index.
+    """
+
+    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes'):
         # Ensure the dataset is accessed from the root of the repository
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         self.folder_path = os.path.join(base_path, folder_path)
@@ -33,7 +56,7 @@ class Potholes(Dataset):
             splits = json.load(file)
 
         #If the validation percentage for the split is set, it will create a validation set based on the existing training set
-        if val_percentage is not None:
+        if val_percent is not None:
 
             #Get all the training files and shuffel them
             train_files = splits['train']
@@ -41,7 +64,7 @@ class Potholes(Dataset):
             random.shuffle(train_files)  
 
             # Calculate the number of validation samples
-            val_count = int(len(train_files) * val_percentage)
+            val_count = int(len(train_files) * val_percent)
             new_val_files = train_files[:val_count]
             new_train_files = train_files[val_count:]
 
@@ -58,7 +81,7 @@ class Potholes(Dataset):
                 self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['test']]
                 self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in splits['test']]
         else:
-            # Use the original splits if val_percentage is not provided
+            # Use the original splits if val_percent is not provided
             if split.lower() == 'train':
                 self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['train']]
                 self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in splits['train']]
@@ -70,9 +93,21 @@ class Potholes(Dataset):
 
 
     def __len__(self):
+        """Returns the total number of samples in the dataset."""
         return len(self.image_paths)
 
     def __getitem__(self, idx):
+        """Retrieves a sample (image and targets) from the dataset at the given index.
+
+        Args:
+            idx (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing:
+                - image (Tensor): The image tensor after applying the transformations.
+                - targets (list): A list of TensorDict objects containing bounding box coordinates and labels.
+        """
+
         # Load the image and convert to RGB
         image = Image.open(self.image_paths[idx]).convert('RGB')
         original_width, original_height = image.size
@@ -92,7 +127,6 @@ class Potholes(Dataset):
             new_height, new_width = image.shape[1], image.shape[2]
         else:
             image = transform.ToTensor(image)
-
 
         # Iterate through each object in the XML file
         for obj in root.findall('object'):
@@ -119,84 +153,99 @@ class Potholes(Dataset):
 
 
             # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
-            directory = TensorDict({'xmin' : xmin, 'ymin': ymin, 'xmax': xmax, 'ymax': ymax, 'labels': label})
+            directory = TensorDict({
+                'xmin'  : torch.tensor(xmin, dtype=torch.float32, device=device),
+                'ymin'  : torch.tensor(ymin, dtype=torch.float32, device=device),
+                'xmax'  : torch.tensor(xmax, dtype=torch.float32, device=device),
+                'ymax'  : torch.tensor(ymax, dtype=torch.float32, device=device),
+                'labels': torch.tensor(label, dtype=torch.int64, device=device)
+            })
+
             targets.append(directory)
-
-
         return image, targets
 
-def load_data(split, transform, folder_path='Potholes', seed=42):
-    None
 
+def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Potholes'):
+    """
+    Loads the Potholes dataset for training, validation, and testing.
 
+    Parameters:
+        val_percent (int, optional): The proportion of the training data to use for validation.
+                                        If provided, the training set will be split accordingly.
+        seed (int): Seed for random shuffling of the training data. Defaults to 42.
+        transform (callable, optional): A function/transform to apply to the images.
+        folder_path (str): Relative path to the folder containing the dataset. Defaults to 'Potholes'.
 
+    Returns:
+        tuple: A tuple containing three elements:
+            - train_data (Potholes): The dataset for training.
+            - val_data (Potholes): The dataset for validation.
+            - test_data (Potholes): The dataset for testing.
+    """
+    train_data = Potholes(split='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+    val_data = Potholes(val='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+    test_data = Potholes(test='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+
+    return train_data, val_data, test_data
+
+def custom_collate_fn(batch):
+    """
+    Custom collate function for a PyTorch DataLoader, used to process a batch of data 
+    where each sample contains an image and its corresponding targets.
+    It is needed because the deafult collate function expect dimensions of same size
+
+    Parameters:
+        batch (list of tuples): A list where each element is a tuple (image, target).
+            - image: A tensor representing the image.
+            - target: A list or dictionary containing the bounding box coordinates 
+                      and labels for objects detected in the image.
+
+    Returns:
+        tuple: A tuple containing:
+            - images (Tensor): A stacked tensor of images with shape 
+              (batch_size, channels, height, width), created using PyTorch's `default_collate`.
+            - targets (list): A list of original target annotations, one for each image.
+    """
+
+    images = []
+    targets = []
+
+    for image, target in batch:
+        images.append(image)  # Append the image part to the images list
+        targets.append(target)  # Append the target part to the targets list
+
+    return default_collate(images), targets  # Return stacked images and original targets
 
 
 if __name__ == "__main__":
+
     # Define any transforms
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ])
-
+    device = 'cpu'
     # Initialize the dataset and dataloader
     potholes_dataset = Potholes(split = 'Train', transform=transform, folder_path='Potholes')
-    dataloader = DataLoader(potholes_dataset, batch_size=32, shuffle=True, num_workers=8)
+    dataloader = DataLoader(potholes_dataset, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
 
-    print("Number of samples in the dataset:", len(potholes_dataset))
+    print("\nNumber of samples in the dataset:", len(potholes_dataset))
     print("Number of batches in the dataloader:", len(dataloader))
 
-
+    #Check the get item method
     sample_image, sample_targets = potholes_dataset[0]  
-    print("Sample Image Type:", type(sample_image))
+    print("\nSample Image Type:", type(sample_image))
+    print("Image in on the following device (-1 = cpu) and (0 = cuda):", sample_image.get_device())
     print("Sample Targets Type:", type(sample_targets))
     
     # Check the type of individual targets
     target = sample_targets[0]
-    print("Type of individual target:", type(target))
+    print("\nType of individual target:", type(target))
     print("Type of xmin:", type(target['xmin']))
     print("Type of labels:", type(target['labels']))
     #Visualize samples
     #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
-
-    # get image from the dataloader 
-    image, targets = potholes_dataset[100]
     
-
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-i", "--image", required=True,
-        help="path to the input image")
-    ap.add_argument("-m", "--method", type=str, default="fast",
-        choices=["fast", "quality"],
-        help="selective search method")
-    args = vars(ap.parse_args())
-
-    image = cv.imread(args["image"])
-    ss = cv.ximgproc.segmentation.createSelectiveSearchSegmentation()
-    ss.setBaseImage(image)
-
-    # check to see if we are using the *fast* but *less accurate* version
-    # of selective search
-    if args["method"] == "fast":
-        print("[INFO] using *fast* selective search")
-        ss.switchToSelectiveSearchFast()
-    # otherwise we are using the *slower* but *more accurate* version
-    else:
-        print("[INFO] using *quality* selective search")
-        ss.switchToSelectiveSearchQuality()
-
-
-        # run selective search on the input image
-    start = time.time()
-    rects = ss.process()
-    end = time.time()
-    # show how along selective search took to run along with the total
-    # number of returned region proposals
-    print("[INFO] selective search took {:.4f} seconds".format(end - start))
-    print("[INFO] {} total region proposals".format(len(rects)))
-
-
-
 
 
 
@@ -211,19 +260,21 @@ if __name__ == "__main__":
     #    end_time = time.time()
     #    return end_time - start_time
     ##Test for optimal num of workers in DataLoader
-    ##BEST IN NUM_WORKERS = 8
+    #
+    ## BEST IN NUM_WORKERS = 4
     #batch_size = 32
     #num_workers_list = [0, 2, 4, 8, 16, 32, 64]
+    #
     #for num_workers in num_workers_list:
     #    dataloader = DataLoader(
     #        potholes_dataset,
     #        batch_size=batch_size,
     #        shuffle=True,
     #        num_workers=num_workers,
+    #        collate_fn=collate_fn,
     #    )
     #    duration = benchmark_dataloader(dataloader)
     #    print(f"num_workers: {num_workers}, Time taken: {duration:.2f} seconds")
     #
-    #
     #benchmark_dataloader(dataloader, num_batches=64)
-    #
+    

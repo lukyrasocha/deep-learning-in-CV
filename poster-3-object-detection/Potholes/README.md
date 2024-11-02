@@ -12,6 +12,6 @@
 ```
 
 ### Important Notes
-
+  
 - The `<path>` tag in the xml annotations may not match with your environment, therefore, consider `<filename>` tag.
 - The file `splits.json` was generated randomly taking 20% of the total dataset as **test** and the rest as **train**.
