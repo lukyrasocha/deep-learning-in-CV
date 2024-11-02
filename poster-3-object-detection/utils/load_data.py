@@ -10,7 +10,11 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
+<<<<<<< HEAD
+import json
+=======
 from torch.utils.data import default_collate
+>>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
 
 class Potholes(Dataset):
@@ -154,11 +158,11 @@ class Potholes(Dataset):
 
             # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
             directory = TensorDict({
-                'xmin'  : torch.tensor(xmin, dtype=torch.float32, device=device),
-                'ymin'  : torch.tensor(ymin, dtype=torch.float32, device=device),
-                'xmax'  : torch.tensor(xmax, dtype=torch.float32, device=device),
-                'ymax'  : torch.tensor(ymax, dtype=torch.float32, device=device),
-                'labels': torch.tensor(label, dtype=torch.int64, device=device)
+                'xmin'  : torch.tensor(xmin, dtype=torch.float32),
+                'ymin'  : torch.tensor(ymin, dtype=torch.float32),
+                'xmax'  : torch.tensor(xmax, dtype=torch.float32),
+                'ymax'  : torch.tensor(ymax, dtype=torch.float32),
+                'labels': torch.tensor(label, dtype=torch.int64)
             })
 
             targets.append(directory)
@@ -214,7 +218,11 @@ def custom_collate_fn(batch):
         batch_images.append(image)  # Append the image part to the images list
         batch_targets.append(target)  # Append the target part to the targets list
 
+<<<<<<< HEAD
+    return custom_collate_fn(images), targets  # Return stacked images and original targets
+=======
     return default_collate(batch_images), batch_targets  # Return stacked images and original targets
+>>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
 
 if __name__ == "__main__":
@@ -243,6 +251,12 @@ if __name__ == "__main__":
     print("\nType of individual target:", type(target))
     print("Type of xmin:", type(target['xmin']))
     print("Type of labels:", type(target['labels']))
+<<<<<<< HEAD
+    #Visualize samples
+    visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
+    
+
+=======
   
     #Check the dataloader
     data_iter = iter(dataloader)
@@ -282,6 +296,7 @@ if __name__ == "__main__":
             if i >= 5:
                 break # only show 5 images
         break         # Only show one batch
+>>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
     #The following code is used to check that the precentage for train, valdiation and test is working
     train_dataset, val_dataset, test_dataset = load_data(val_percent=20, seed=42, transform=transform)
