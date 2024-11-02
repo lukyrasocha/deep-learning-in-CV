@@ -1,0 +1,17 @@
+{"time":"2024-10-23T18:47:58.747427762+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T18:47:58.747440337+02:00","level":"INFO","msg":"created symlink","path":"/zhome/c4/8/214730/02516-intro-to-dl-in-cv/poster-2-segmentation/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_184758-5ygpyzgt/logs/debug-core.log"}
+{"time":"2024-10-23T18:47:58.858611176+02:00","level":"INFO","msg":"created new stream","id":"5ygpyzgt"}
+{"time":"2024-10-23T18:47:58.85863636+02:00","level":"INFO","msg":"stream: started","id":"5ygpyzgt"}
+{"time":"2024-10-23T18:47:58.858650398+02:00","level":"INFO","msg":"sender: started","stream_id":"5ygpyzgt"}
+{"time":"2024-10-23T18:47:58.858645977+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"5ygpyzgt"}}
+{"time":"2024-10-23T18:47:58.858665827+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"5ygpyzgt"}}
+{"time":"2024-10-23T18:47:59.142702408+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T18:48:05.373574774+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T18:48:05.374395476+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T18:48:06.373989105+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"saving job artifact","runtime_seconds":0.835455773}],"total_operations":1}}
+{"time":"2024-10-23T18:48:07.520885293+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T18:48:08.760988636+02:00","level":"INFO","msg":"stream: closing","id":"5ygpyzgt"}
+{"time":"2024-10-23T18:48:08.761126977+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"5ygpyzgt"}}
+{"time":"2024-10-23T18:48:08.761136299+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"5ygpyzgt"}}
+{"time":"2024-10-23T18:48:08.761141054+02:00","level":"INFO","msg":"sender: closed","stream_id":"5ygpyzgt"}
+{"time":"2024-10-23T18:48:08.762167947+02:00","level":"INFO","msg":"stream: closed","id":"5ygpyzgt"}
