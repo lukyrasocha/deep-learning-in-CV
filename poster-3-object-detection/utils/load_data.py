@@ -9,6 +9,10 @@ from torchvision import transforms
 from visualize import visualize_samples
 from tensordict import TensorDict
 import json
+import cv2 as cv
+import argparse 
+import random
+
 
 
 class Potholes(Dataset):
@@ -154,7 +158,45 @@ if __name__ == "__main__":
     print("Type of labels:", type(target['labels']))
     #Visualize samples
     #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
+
+    # get image from the dataloader 
+    image, targets = potholes_dataset[100]
     
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-i", "--image", required=True,
+        help="path to the input image")
+    ap.add_argument("-m", "--method", type=str, default="fast",
+        choices=["fast", "quality"],
+        help="selective search method")
+    args = vars(ap.parse_args())
+
+    image = cv.imread(args["image"])
+    ss = cv.ximgproc.segmentation.createSelectiveSearchSegmentation()
+    ss.setBaseImage(image)
+
+    # check to see if we are using the *fast* but *less accurate* version
+    # of selective search
+    if args["method"] == "fast":
+        print("[INFO] using *fast* selective search")
+        ss.switchToSelectiveSearchFast()
+    # otherwise we are using the *slower* but *more accurate* version
+    else:
+        print("[INFO] using *quality* selective search")
+        ss.switchToSelectiveSearchQuality()
+
+
+        # run selective search on the input image
+    start = time.time()
+    rects = ss.process()
+    end = time.time()
+    # show how along selective search took to run along with the total
+    # number of returned region proposals
+    print("[INFO] selective search took {:.4f} seconds".format(end - start))
+    print("[INFO] {} total region proposals".format(len(rects)))
+
+
+
 
 
 
