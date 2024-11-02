@@ -4,13 +4,17 @@ import time
 import torch
 import json
 import xml.etree.ElementTree as ET
+import random
 
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from visualize import visualize_samples
 from tensordict import TensorDict
+<<<<<<< HEAD
 import json
+=======
+from torch.utils.data import default_collate
+>>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
 
 class Potholes(Dataset):
@@ -57,14 +61,14 @@ class Potholes(Dataset):
 
         #If the validation percentage for the split is set, it will create a validation set based on the existing training set
         if val_percent is not None:
-
-            #Get all the training files and shuffel them
+            #Get all the files to calculate the precentage for validation set
+            number_of_all_files = len(sorted(glob.glob(os.path.join(self.folder_path, "annotated-images/img-*.jpg")))) #Get the number of all the files in the folder 
             train_files = splits['train']
             random.seed(seed)
             random.shuffle(train_files)  
 
             # Calculate the number of validation samples
-            val_count = int(len(train_files) * val_percent)
+            val_count = int(number_of_all_files * val_percent/100)
             new_val_files = train_files[:val_count]
             new_train_files = train_files[val_count:]
 
@@ -165,7 +169,7 @@ class Potholes(Dataset):
         return image, targets
 
 
-def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Potholes'):
+def load_data(val_percent=None, seed=42, transform=None, folder_path='Potholes'):
     """
     Loads the Potholes dataset for training, validation, and testing.
 
@@ -183,8 +187,8 @@ def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Poth
             - test_data (Potholes): The dataset for testing.
     """
     train_data = Potholes(split='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-    val_data = Potholes(val='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-    test_data = Potholes(test='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+    val_data = Potholes(split='val', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
+    test_data = Potholes(split='test', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
 
     return train_data, val_data, test_data
 
@@ -207,14 +211,18 @@ def custom_collate_fn(batch):
             - targets (list): A list of original target annotations, one for each image.
     """
 
-    images = []
-    targets = []
+    batch_images = []
+    batch_targets = []
 
     for image, target in batch:
-        images.append(image)  # Append the image part to the images list
-        targets.append(target)  # Append the target part to the targets list
+        batch_images.append(image)  # Append the image part to the images list
+        batch_targets.append(target)  # Append the target part to the targets list
 
+<<<<<<< HEAD
     return custom_collate_fn(images), targets  # Return stacked images and original targets
+=======
+    return default_collate(batch_images), batch_targets  # Return stacked images and original targets
+>>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
 
 if __name__ == "__main__":
@@ -243,11 +251,59 @@ if __name__ == "__main__":
     print("\nType of individual target:", type(target))
     print("Type of xmin:", type(target['xmin']))
     print("Type of labels:", type(target['labels']))
+<<<<<<< HEAD
     #Visualize samples
     visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
     
 
+=======
+  
+    #Check the dataloader
+    data_iter = iter(dataloader)
+    batch_images, batch_targets = next(data_iter)
 
+    #When all the data is loaded we can insert it to the GPU if it is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print('You are using:', device)
+    batch_images = batch_images[0].to(device)        #Check to ensure the data can be send to the cuda:0 
+    targets = batch_targets[0]
+    box = targets[0].to(device)
+
+    print("\nSingle Batch:")
+    print("The batch is on the")
+    print("Image batch in on the following device (-1 = cpu) and (0 = cuda):", len(batch_targets)) 
+    print("Image batch shape:", batch_images.shape) 
+
+    # Print the target from the dataloader
+    # Batch_target is all the targets in the batch whereas targets is for 1 image (the boxes on the image). Box is therefore one of the boxes on the image (targets)
+    print(f'\nPrint the box:\n {box}')
+    print("Type:", type(box))
+
+    print("\nBounding box coordinates:", box['xmin'], box['ymin'], box['xmax'], box['ymax'])
+    print("Label:", box['labels'])
+
+    #The following code is used to show that the output from costum_collate_fn works
+    device = 'cpu'
+    for batch_images, batch_targets in dataloader:
+        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
+        print("\nTargets for each image in the batch:")
+
+        # Iterate through the targets to show correspondence with images
+        for i, targets in enumerate(batch_targets):
+            print(f"Image {i} has {len(targets)} target(s):")
+            for target in targets:
+                print(f"  Bounding box: {target['xmin']:.3g}, {target['ymin']:.3g}, {target['xmax']:.3g}, {target['ymax']:.3g}, Label: {target['labels']}")
+            if i >= 5:
+                break # only show 5 images
+        break         # Only show one batch
+>>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
+
+    #The following code is used to check that the precentage for train, valdiation and test is working
+    train_dataset, val_dataset, test_dataset = load_data(val_percent=20, seed=42, transform=transform)
+    total = len(train_dataset) + len(val_dataset) + len(test_dataset)
+    print('The split for train is:', len(train_dataset)/total)
+    print('The split for validation is:', len(val_dataset)/total)
+    print('The split for test is:', len(test_dataset)/total)
 
 ###############################################################
     #Function to benchmark the dataloader

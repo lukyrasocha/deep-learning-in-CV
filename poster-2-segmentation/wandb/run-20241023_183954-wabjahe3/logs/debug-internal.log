@@ -1,0 +1,17 @@
+{"time":"2024-10-23T18:39:54.341086491+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T18:39:54.341098637+02:00","level":"INFO","msg":"created symlink","path":"/zhome/c4/8/214730/02516-intro-to-dl-in-cv/poster-2-segmentation/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_183954-wabjahe3/logs/debug-core.log"}
+{"time":"2024-10-23T18:39:54.454036886+02:00","level":"INFO","msg":"created new stream","id":"wabjahe3"}
+{"time":"2024-10-23T18:39:54.454069832+02:00","level":"INFO","msg":"stream: started","id":"wabjahe3"}
+{"time":"2024-10-23T18:39:54.454094568+02:00","level":"INFO","msg":"sender: started","stream_id":"wabjahe3"}
+{"time":"2024-10-23T18:39:54.454081212+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"wabjahe3"}}
+{"time":"2024-10-23T18:39:54.454093561+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"wabjahe3"}}
+{"time":"2024-10-23T18:39:54.786732764+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T18:40:01.717049896+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T18:40:01.717731185+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T18:40:02.551421664+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T18:40:02.717507037+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.165965382}],"total_operations":1}}
+{"time":"2024-10-23T18:40:03.914523115+02:00","level":"INFO","msg":"stream: closing","id":"wabjahe3"}
+{"time":"2024-10-23T18:40:03.914664506+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"wabjahe3"}}
+{"time":"2024-10-23T18:40:03.914676072+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"wabjahe3"}}
+{"time":"2024-10-23T18:40:03.914682019+02:00","level":"INFO","msg":"sender: closed","stream_id":"wabjahe3"}
+{"time":"2024-10-23T18:40:03.915583101+02:00","level":"INFO","msg":"stream: closed","id":"wabjahe3"}
