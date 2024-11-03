@@ -19,12 +19,14 @@ I also think that if we predict a proposal as background then we don't have to m
 Since the training and validation/testing is two different tasks (we need the original image and target in validation/testing but not in training) I suggest that we use two different classes
 
 - class proposals
+  
 Use on the training data to return proposals and targets (we need to assign pothole or background to these targets.)
 Should be normalized and transformed so they can be applied to the training of the model
 Should take class imbalance into account
 
 
 - class potholes
+  
 use on validation and test data to return original image, original targets, proposals for the image, targets for proposals.
 Should also be normalized and transformed
 Here we need to keep track of the transformation and the change in coordinates when the proposal is selected so we can draw it
