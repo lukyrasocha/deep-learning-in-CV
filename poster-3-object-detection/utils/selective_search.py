@@ -174,6 +174,38 @@ def calculate_recall(proposals, ground_truth_boxes, iou_threshold):
     return recall, matches, all_matching_proposals
 
 
+def visualize_proposals_and_gt(image, ground_truth, proposals, iou_threshold):
+    # Convert the image tensor to a format compatible with matplotlib
+    if isinstance(image, torch.Tensor):
+        image = image.permute(1, 2, 0).cpu().numpy()  # Change dimensions from CxHxW to HxWxC
+
+    # Create the plot
+    fig, ax = plt.subplots(1, figsize=(10, 10))
+    ax.imshow(image)
+    ax.set_title(f'Image with Ground Truth and Proposal Bounding Boxes with IoU {iou_threshold}', color=color_primary)
+
+    # Plot ground truth bounding boxes in green
+    for gt_box in ground_truth:
+        xmin, ymin, xmax, ymax = gt_box['xmin'], gt_box['ymin'], gt_box['xmax'], gt_box['ymax']
+        width, height = xmax - xmin, ymax - ymin
+        rect = patches.Rectangle((xmin, ymin), width, height, linewidth=2, edgecolor='green', facecolor='none')
+        ax.add_patch(rect)
+        ax.text(xmin, ymin - 5, 'Ground Truth', color='green', fontsize=12)
+
+    # Plot proposal bounding boxes in red
+    for proposal in proposals:
+        xmin, ymin, xmax, ymax = proposal['xmin'], proposal['ymin'], proposal['xmax'], proposal['ymax']
+        width, height = xmax - xmin, ymax - ymin
+        rect = patches.Rectangle((xmin, ymin), width, height, linewidth=1, edgecolor='red', facecolor='none')
+        ax.add_patch(rect)
+        ax.text(xmin, ymin - 5, 'Proposal', color='red', fontsize=10)
+
+    plt.axis('off')
+    plt.savefig('proposals_ground_truth.png')
+    plt.show()
+
+
+
 def generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=False, quality='fast'):
     
     # Initialize lists to store all proposals and ground truth boxes
@@ -182,7 +214,14 @@ def generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=Fals
 
     for i in range(num_images):
         # Load image and ground truth boxes
-        image, target = potholes_dataset[i]
+        #index = i + np.random.randint(0, 500)
+        #index = 48
+        index = 75
+        image, target = potholes_dataset[index]
+
+        # the index is 
+        print(f"The index is {index}")
+        
         ground_truth_count = len(target)
         
         # Generate proposals using selective search
@@ -205,11 +244,11 @@ def generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=Fals
         
         # Append to the list of all proposals
         all_image_proposals.append({
-            'image_index': i,
-            'proposals': image_proposals
+            'image': image,
+            'proposals': image_proposals,
+            'ground_truhs': target,  
         })
-
-
+        
     # added a pickle, since it might be smart to do this only once instead of every time
     # we run the model 
     if pickle:
@@ -222,7 +261,7 @@ def generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=Fals
 
 if __name__ == "__main__":
     transform = transforms.Compose([
-        #transforms.Resize((256, 256)),
+        transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ])
     # Initialize the dataset
@@ -231,16 +270,20 @@ if __name__ == "__main__":
 
 
     # Process 10 images from the dataset
-    num_images = 10
-    iou_threshold = 0.9
-
+    num_images = 1
+    iou_threshold = 0
     # Generate proposals for the entire dataset
     all_image_proposals = generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=False)
 
-# print all info about the dictionary 
-    for i in range(len(all_image_proposals)):
-        print(all_image_proposals[i])
-        print(all_image_proposals[i]['image_index'])
+    # get the image from the all_image_proposals dictionary 
+    image = all_image_proposals[0]['image']
+    image_proposals = all_image_proposals[0]['proposals']
+    target = all_image_proposals[0]['ground_truhs']
+
+
+# Visualize the proposals
+visualize_proposals_and_gt(image, target, image_proposals, iou_threshold)
+
 
 
 
@@ -256,7 +299,7 @@ if __name__ == "__main__":
 #        # Load image and ground truth boxes
 #
 #    # Define IoU thresholds
-#    iou_thresholds = np.arange(0.0, 1.05, 0.05)  # IoU thresholds from 0.1 to 1.0 with a step of 0.05
+#    iou_thresholds = np.arange(0.0, 1.05, 0.01)  # IoU thresholds from 0.1 to 1.0 with a step of 0.05
 #
 #    # Process 10 images from the dataset
 ## Process 10 images from the dataset
@@ -266,11 +309,11 @@ if __name__ == "__main__":
 #
 #for i in range(num_images):
 #    # Load image and ground truth boxes
-#    image, target = potholes_dataset[i]
+#    image, target = potholes_dataset[i + np.random.randint(0, 500)]
 #    ground_truth_count = len(target)  # Assuming target is a list or dict of ground truths
 #
 #    # Generate proposals using selective search
-#    proposals = generate_proposals_selective_search(image, max_proposals=9000)
+#    proposals = generate_proposals_selective_search(image, max_proposals=9000, type='quality')
 #    print(f"Number of proposals for image {i+1}: {len(proposals)}")
 #
 #    # Lists to store recall and number of proposals for each threshold for the current image
@@ -310,6 +353,7 @@ if __name__ == "__main__":
 #
 ## Add titles, labels, and legends to the subplots
 #axes[0].set_title("Recall vs IoU Threshold for Each Image")
+#
 #axes[0].set_xlabel("IoU Threshold")
 #axes[0].set_ylabel("Recall")
 #axes[0].legend(loc='best')
@@ -317,6 +361,7 @@ if __name__ == "__main__":
 #
 #axes[1].set_title("Number of Matching Proposals vs IoU Threshold for Each Image")
 #axes[1].set_xlabel("IoU Threshold")
+#axes[1].set_yscale('log')  # Set the y-axis to logarithmic scale
 #axes[1].set_ylabel("Number of Matching Proposals")
 #axes[1].legend(loc='best')
 #axes[1].grid(True)
