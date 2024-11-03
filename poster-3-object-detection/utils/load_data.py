@@ -10,11 +10,9 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
-<<<<<<< HEAD
+from visualize import visualize_samples
 import json
-=======
 from torch.utils.data import default_collate
->>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
 
 class Potholes(Dataset):
@@ -217,12 +215,7 @@ def custom_collate_fn(batch):
     for image, target in batch:
         batch_images.append(image)  # Append the image part to the images list
         batch_targets.append(target)  # Append the target part to the targets list
-
-<<<<<<< HEAD
-    return custom_collate_fn(images), targets  # Return stacked images and original targets
-=======
     return default_collate(batch_images), batch_targets  # Return stacked images and original targets
->>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
 
 if __name__ == "__main__":
@@ -251,13 +244,10 @@ if __name__ == "__main__":
     print("\nType of individual target:", type(target))
     print("Type of xmin:", type(target['xmin']))
     print("Type of labels:", type(target['labels']))
-<<<<<<< HEAD
     #Visualize samples
     visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
     
 
-=======
-  
     #Check the dataloader
     data_iter = iter(dataloader)
     batch_images, batch_targets = next(data_iter)
@@ -296,7 +286,6 @@ if __name__ == "__main__":
             if i >= 5:
                 break # only show 5 images
         break         # Only show one batch
->>>>>>> 360f6c9bd869b30c80f3b2df46e11dad972b957d
 
     #The following code is used to check that the precentage for train, valdiation and test is working
     train_dataset, val_dataset, test_dataset = load_data(val_percent=20, seed=42, transform=transform)
