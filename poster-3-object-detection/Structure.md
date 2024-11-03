@@ -2,6 +2,8 @@
 To train the model we need an image proposal and a corresponding target. 
 We need to figure out if we should make the proposals used in training on the fly or before. The advantage of making it before is that training will be faster. The disadvantage is that it requires 0.5 GB storage on the GPU
 
+We need to figure out what loss function we will use since we have a combination of classification and regression. We can weight these loss for each "model" and threat those weights as hyperparameters
+
 # How are we going to validate the model?
 For each image we are going to get the corresponding image proposals and target proposals. Then we will send all the proposals through the model to get a prediction for certainty and box location.
 These values need to be saved and I suggest we will do this in the tensorDict
