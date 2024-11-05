@@ -10,7 +10,7 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
-from visualize import visualize_samples
+from visualize import visualize_samples, visualize_proposal
 import json
 from torch.utils.data import default_collate
 from selective_search_new import  get_proposals_and_targets
@@ -60,33 +60,10 @@ class Proposals(Dataset):
                 image_target = get_xml_data(xml_path)
 
                 proposals, proposal_targets = get_proposals_and_targets(image, image_target, transform)
+                self.image_proposals_list.extend(proposals)
+                self.target_proposals_list.extend(proposal_targets)
 
-                print('1 iteration')
-
-
-
-
-
-
-
-            ############################################################
-            #               Create the following:
-            #
-            # tree = ET.parse(xml_path)
-            # root = tree.getroot()
-            #
-            # for idx in range(self.image_paths)  
-            #    Get image and target dictonary
-            #    
-            #    proposal, taget = get_proposal  
-            #
-            #    proposals.extend(proposal)
-            #    targets.extend(target)
-            #    
-            #    
-            #    
-            #
-
+                break
             
 
 
@@ -142,5 +119,11 @@ if __name__ == "__main__":
         transforms.ToTensor(),
     ])
     prop = Proposals(split = 'Train', val_percent=20, transform=transform, folder_path='Potholes')
+    print(prop.image_proposals_list[1].shape)
+    for image, target in zip(prop.image_proposals_list, prop.target_proposals_list):
+        if int(target['label']) == 1:
+            print(target)
+            visualize_proposal(image, target, box_thickness=1, figname='proposals.png')
+            break
 
     print('hello')

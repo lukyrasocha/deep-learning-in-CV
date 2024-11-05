@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from torchvision.transforms.functional import to_pil_image
 from PIL import Image
-from visualize import visualize_proposals
+from visualize import visualize_proposals, visualize_proposal
 from tensordict import TensorDict
 from metrics import IoU
-
+import sys
 ################################################################
 ### move later to visualize.py
 
@@ -73,7 +73,7 @@ def get_proposals_and_targets(image, target, transform, method = 'fast', max_pro
     image_proposals = []
 
     for (x, y, w, h) in rects:
-        image_proposal = image_np[y:y+h, x:x+w]
+        image_proposal = np.copy(image_np[y:y+h, x:x+w])
 
         target_proposal = {
             'xmin': torch.tensor(float(x)),
@@ -85,9 +85,10 @@ def get_proposals_and_targets(image, target, transform, method = 'fast', max_pro
         image_proposals.append(image_proposal)
         target_proposals.append(target_proposal)
 
-    image_proposals, target_proposals = get_image_and_target_label(image_proposals, target_proposals, target, transform)
-    
-    return None, None
+    visualize_proposals(image, target, num_proposals=500, box_thickness=3, figname='target.png')
+    images, targets = get_image_and_target_label(image_proposals, target_proposals, target, transform)
+    print(type(images))
+    return images, targets
 
 def get_image_and_target_label(image_proposals, target_proposals, target, transform, iou_upper_limit = 0.7, iou_lower_limit = 0.3):
 
@@ -120,24 +121,48 @@ def get_image_and_target_label(image_proposals, target_proposals, target, transf
                 current_target.setdefault('label', torch.tensor(1, dtype=torch.int64))
 
                 image_transformed, current_target = apply_transformation(image_proposal, current_target, transform)
-                current_target = check_if_gt_bbx_outside_proposal(current_target, target[iou_max_index])
+                current_target = check_if_gt_bbx_outside_proposal(image_transformed, current_target, target[iou_max_index])
+
+                print(current_target)
+                print(image_transformed.shape)
+                visualize_proposal(image_transformed, current_target, box_thickness=2, figname='proposals_stop.png')
+                sys.exit(0)
 
             elif iou_max <= iou_lower_limit:
                 current_target.setdefault('label', torch.tensor(0, dtype=torch.int64))
                 image_transformed, current_target = apply_transformation(image_proposal, current_target, transform)
 
+  
+            images.append(image_transformed)
             targets.append(current_target)
     
     return images, targets
 
+def apply_transformation(image, target, transform):
+    original_height, original_width, _ = image.shape
+    image = Image.fromarray(image)
 
+    image_tensor = transform(image)
+    _, new_height, new_width = image_tensor.shape
+
+    x_scale = new_width / original_width
+    y_scale = new_height / original_height
+
+    if int(target['label']) != 0:
+        target.setdefault('x_scale', torch.tensor(float(x_scale))) 
+        target.setdefault('y_scale', torch.tensor(float(y_scale))) 
+
+    return image_tensor, target
                 
-def check_if_gt_bbx_outside_proposal(target_proposal, gt_bbox):
+def check_if_gt_bbx_outside_proposal(image, target_proposal, gt_bbox):
+    print(gt_bbox['xmin'], gt_bbox['ymin'], gt_bbox['xmax'], gt_bbox['ymax'])
+    # Scaling and translating the bounding box coordinates
+    gt_xmin_scaled = (gt_bbox['xmin'] - target_proposal['xmin'])  
+    gt_ymin_scaled = (gt_bbox['ymin'] - target_proposal['ymin']) 
+    gt_xmax_scaled = (gt_bbox['xmax'] - target_proposal['xmin']) * target_proposal['x_scale']
+    gt_ymax_scaled = (gt_bbox['ymax'] - target_proposal['ymin']) * target_proposal['y_scale']
 
-    gt_xmin_scaled = gt_bbox['xmin'] * target_proposal['x_scale'] - target_proposal['xmin']
-    gt_ymin_scaled = gt_bbox['ymin'] * target_proposal['y_scale'] - target_proposal['ymin']
-    gt_xmax_scaled = gt_bbox['xmax'] * target_proposal['x_scale'] - target_proposal['xmin']
-    gt_ymax_scaled = gt_bbox['ymax'] * target_proposal['y_scale'] - target_proposal['ymin']
+
 
     if gt_xmin_scaled < 0:
         target_proposal.setdefault('gt_bbox_xmin', torch.tensor(float(0)))            
@@ -149,34 +174,21 @@ def check_if_gt_bbx_outside_proposal(target_proposal, gt_bbox):
     else:
         target_proposal.setdefault('gt_bbox_ymin', torch.tensor(float(gt_ymin_scaled)))
 
-    diff_x = abs(target_proposal['xmax'] - target_proposal['xmin'])
-    if gt_xmax_scaled > diff_x:
-        target_proposal.setdefault('gt_bbox_xmax', torch.tensor(float(diff_x)))            
+
+    if gt_xmax_scaled > image.shape[1] - 1:
+        target_proposal.setdefault('gt_bbox_xmax', torch.tensor(float(image.shape[1] - 1)))            
     else:
         target_proposal.setdefault('gt_bbox_xmax', torch.tensor(float(gt_xmax_scaled)))
 
-    diff_y = abs(target_proposal['ymax'] - target_proposal['ymin'])
-    if gt_ymax_scaled > diff_y:
-        target_proposal.setdefault('gt_bbox_ymax', torch.tensor(float(diff_y)))            
+
+    if gt_ymax_scaled > image.shape[2] - 1:
+        target_proposal.setdefault('gt_bbox_ymax', torch.tensor(float(image.shape[2] - 1)))            
     else:
         target_proposal.setdefault('gt_bbox_ymax', torch.tensor(float(gt_ymax_scaled)))
             
     return target_proposal
 
-def apply_transformation(image, target, transform):
-    original_height, original_width, _ = image.shape
-    image = Image.fromarray(image)
-    image_tensor = transform(image)
-    _, new_hight, new_width = image_tensor.shape
 
-    x_scale = new_width / original_width
-    y_scale = new_hight / original_height
-
-    if int(target['label']) != 0:
-        target.setdefault('x_scale', torch.tensor(float(x_scale))) 
-        target.setdefault('y_scale', torch.tensor(float(y_scale))) 
-
-    return image_tensor, target
 
 
 
