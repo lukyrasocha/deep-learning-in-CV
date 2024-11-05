@@ -13,7 +13,8 @@ from tensordict import TensorDict
 from visualize import visualize_samples
 import json
 from torch.utils.data import default_collate
-from selection_search_new import  get_proposals_and_targets
+from selective_search_new import  get_proposals_and_targets
+
 
 
 
@@ -58,7 +59,9 @@ class Proposals(Dataset):
                 image = Image.open(image_path).convert('RGB')
                 image_target = get_xml_data(xml_path)
 
-                proposals, proposal_targets = get_proposals_and_targets(image, image_target)
+                proposals, proposal_targets = get_proposals_and_targets(image, image_target, transform)
+
+                print('1 iteration')
 
 
 

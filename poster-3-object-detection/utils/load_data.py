@@ -294,38 +294,38 @@ def custom_collate_fn(batch):
     return default_collate(batch_images), batch_targets  # Return stacked images and original targets
 
 def get_xml_data(xml_path):
-        tree = ET.parse(xml_path)
-        root = tree.getroot()
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
 
-        # Initialize lists for the target
-        targets = []
+    # Initialize lists for the target
+    targets = []
 
-        # Iterate through each object in the XML file
-        for obj in root.findall('object'):
-        
-            #If the box is a pothole the label is 1 (True)
-            if obj.find('name').text == 'pothole':
-                label = 1
-            else:
-                label = 0
+    # Iterate through each object in the XML file
+    for obj in root.findall('object'):
+    
+        #If the box is a pothole the label is 1 (True)
+        if obj.find('name').text == 'pothole':
+            label = 1
+        else:
+            label = 0
 
-            # Extract bounding box coordinates
-            bndbox = obj.find('bndbox')
-            xmin = int(bndbox.find('xmin').text)
-            ymin = int(bndbox.find('ymin').text)
-            xmax = int(bndbox.find('xmax').text)
-            ymax = int(bndbox.find('ymax').text)
+        # Extract bounding box coordinates
+        bndbox = obj.find('bndbox')
+        xmin = int(bndbox.find('xmin').text)
+        ymin = int(bndbox.find('ymin').text)
+        xmax = int(bndbox.find('xmax').text)
+        ymax = int(bndbox.find('ymax').text)
 
-            # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
-            directory = TensorDict({
-                'xmin'  : torch.tensor(xmin, dtype=torch.float32),
-                'ymin'  : torch.tensor(ymin, dtype=torch.float32),
-                'xmax'  : torch.tensor(xmax, dtype=torch.float32),
-                'ymax'  : torch.tensor(ymax, dtype=torch.float32),
-                'labels': torch.tensor(label, dtype=torch.int64)
-            })
+        # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
+        directory = TensorDict({
+            'xmin'  : torch.tensor(xmin, dtype=torch.float32),
+            'ymin'  : torch.tensor(ymin, dtype=torch.float32),
+            'xmax'  : torch.tensor(xmax, dtype=torch.float32),
+            'ymax'  : torch.tensor(ymax, dtype=torch.float32),
+            'labels': torch.tensor(label, dtype=torch.int64)
+        })
 
-            targets.append(directory)
+        targets.append(directory)
     
     return targets
 
