@@ -11,6 +11,8 @@ from torchvision.transforms.functional import to_pil_image
 from PIL import Image
 from visualize import visualize_proposals
 from tensordict import TensorDict
+from metrics import IoU
+
 ################################################################
 ### move later to visualize.py
 
@@ -80,36 +82,6 @@ def generate_proposals_selective_search(image_tensor, max_proposals=5000, type='
         proposals.append(proposal)
 
     return proposals
-
-#####################################################################################################################################
-#I just coppied it here because it was, but it is from the matrics by Jone 
-
-def IoU(box1, box2):
-    '''
-    Calculates the Intersection over Union (IoU) of two rectangles.
-    (The O in MABO)
-    '''
-    # Set coordinates for intersection of box1 and box2
-    x_left = max(box1['xmin'], box2['xmin'])
-    y_top = max(box1['ymin'], box2['ymin'])
-    x_right = min(box1['xmax'], box2['xmax'])
-    y_bottom = min(box1['ymax'], box2['ymax'])
-
-    # Return 0 if no intersection
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
-    
-    # Calculate areas of intersection, box1, box2 and union
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
-    box1_area = (box1['xmax'] - box1['xmin']) * (box1['ymax'] - box1['ymin'])
-    box2_area = (box2['xmax'] - box2['xmin']) * (box2['ymax'] - box2['ymin'])
-    union_area = box1_area + box2_area - intersection_area
-
-    # Intersection over Union (IoU)
-    iou = intersection_area / union_area
-    return iou
-#####################################################################################################################################
-
 
 
 def calculate_recall(proposals, ground_truth_boxes, iou_threshold):

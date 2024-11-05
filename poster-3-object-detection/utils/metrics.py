@@ -23,7 +23,6 @@ def IoU(box1, box2):
     iou = intersection_area / union_area
     return iou
 
-
 def best_proposal(proposals, ground_truth_box, return_box=False):
     '''
     Gets the highest IoU of one ground truth with all proposals.
