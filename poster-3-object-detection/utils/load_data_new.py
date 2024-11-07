@@ -13,18 +13,25 @@ from tensordict import TensorDict
 from visualize import visualize_samples, visualize_proposal
 import json
 from torch.utils.data import default_collate
-from selective_search_new import  get_proposals_and_targets
-
+from selective_search_new import  generate_proposals_and_targets
+from torch.utils.data import default_collate
 
 
 
 class Proposals(Dataset):
+    # creat IOU_upper and lower limit as arguement
+    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes', name_data_set):
 
-    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes'):
+        final_image, final_target
+        try 
 
+        self.final_imges, self.final target = open folder
+
+        else: 
+        
         #The to lists contains a number of proposals and targets that is going to be used in training 
-        self.image_proposals_list = []
-        self.target_proposals_list = []
+        self.all_proposal_images = []
+        self.all_proposal_targets = []
     
         # Ensure the dataset is accessed from the root of the repository
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -55,24 +62,33 @@ class Proposals(Dataset):
             image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in new_train_files]
             xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in new_train_files]
 
+            count = 0
+
             for image_path, xml_path in zip(image_paths, xml_paths):
-                image = Image.open(image_path).convert('RGB')
-                image_target = get_xml_data(xml_path)
+                original_image = Image.open(image_path).convert('RGB')
+                original_targets = get_xml_data(xml_path)
 
-                proposals, proposal_targets = get_proposals_and_targets(image, image_target, transform)
-                self.image_proposals_list.extend(proposals)
-                self.target_proposals_list.extend(proposal_targets)
+                proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform)
+                self.all_proposal_images.extend(proposal_images)
+                self.all_proposal_targets.extend(proposal_targets)
+                
+                count += 1
+                print(count)
+                if count > 10:
+                    break
 
-                break
-            
+            self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
+
+            save(self.final_image, self.final_target)
 
 
     def __len__(self):
         """Returns the total number of samples in the dataset."""
-        return len(self.image_paths)
+        return len(self.all_proposal_images)
 
     def __getitem__(self, idx):
-        None
+        return self.final_image[idx], self.final_target[idx]
+        #return self.all_proposal_images[idx], self.all_proposal_targets[idx]
 
 def get_xml_data(xml_path):
     tree = ET.parse(xml_path)
@@ -110,6 +126,33 @@ def get_xml_data(xml_path):
     
     return targets
 
+def custom_collate_fn(batch):
+    """
+    Custom collate function for a PyTorch DataLoader, used to process a batch of data 
+    where each sample contains an image and its corresponding targets.
+    It is needed because the deafult collate function expect dimensions of same size
+
+    Parameters:
+        batch (list of tuples): A list where each element is a tuple (image, target).
+            - image: A tensor representing the image.
+            - target: A list or dictionary containing the bounding box coordinates 
+                      and labels for objects detected in the image.
+
+    Returns:
+        tuple: A tuple containing:
+            - images (Tensor): A stacked tensor of images with shape 
+              (batch_size, channels, height, width), created using PyTorch's `default_collate`.
+            - targets (list): A list of original target annotations, one for each image.
+    """
+
+    batch_images = []
+    batch_targets = []
+
+    for image, target in batch:
+        batch_images.append(image)  # Append the image part to the images list
+        batch_targets.append(target)  # Append the target part to the targets list
+    return default_collate(batch_images), batch_targets  # Return stacked images and original targets
+
 
 
 
@@ -119,11 +162,34 @@ if __name__ == "__main__":
         transforms.ToTensor(),
     ])
     prop = Proposals(split = 'Train', val_percent=20, transform=transform, folder_path='Potholes')
-    print(prop.image_proposals_list[1].shape)
-    for image, target in zip(prop.image_proposals_list, prop.target_proposals_list):
-        if int(target['label']) == 1:
-            print(target)
-            visualize_proposal(image, target, box_thickness=1, figname='proposals.png')
-            break
 
-    print('hello')
+    dataloader = DataLoader(prop, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
+    #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
+
+
+
+    for batch_images, batch_targets in dataloader:
+        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
+
+        count = 0
+        # Iterate through the targets to show correspondence with images
+        for image, target in enumerate(batch_targets):            
+
+            if int(target['label']) == 1:
+                print(f"Image {image} has {len(target)} target(s):")
+                print('length of target', len(target))
+                print(type(target['gt_bbox_xmin']))
+                print(f"  Bounding box: {target['gt_bbox_xmin']:.3g}, {target['gt_bbox_ymin']:.3g}, {target['gt_bbox_xmax']:.3g}, {target['gt_bbox_ymax']:.3g}, Label: {target['label']}")
+                count += 1
+            if count >= 5:
+                break # only show 5 images
+        break         # Only show one batch
+
+    #print(prop.image_proposals_list[1].shape)
+    #for image, target in zip(prop.image_proposals_list, prop.target_proposals_list):
+    #    if int(target['label']) == 1:
+    #        print(target)
+    #        visualize_proposal(image, target, box_thickness=1, figname='proposals.png')
+    #        break
+    #
+    #print('hello')
