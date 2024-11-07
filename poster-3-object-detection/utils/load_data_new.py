@@ -70,6 +70,7 @@ class Proposals(Dataset):
 
             # counte to keep track of the number of images
             count = 0
+            missing_counter = 0
 
             # storing of a class proposals and targets 
 
@@ -95,7 +96,7 @@ class Proposals(Dataset):
                 
                 # Generate proposals and targets
                 proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform)
-                print(f"Number of proposals generated for image {image_id}: {len(proposal_images)}")
+                #print(f"Number of proposals generated for image {image_id}: {len(proposal_images)}")
                 #print(proposal_images)
             
                 # Loop through each proposal and target
@@ -172,7 +173,10 @@ class Proposals(Dataset):
                     print(f"- Proposals generated in total: {len(proposal_images)}")
                     print(f"- Class 0 proposals: {len(class_0_proposals)}")
                     print(f"- Class 1 proposals: {len(class_1_proposals)}")
+                    missing_counter += 1
                     continue
+        # print number of missing 
+            print(f"Number of missing images: {missing_counter}")
 
 
 

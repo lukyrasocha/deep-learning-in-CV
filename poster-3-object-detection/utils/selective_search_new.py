@@ -39,7 +39,7 @@ color_primary = '#990000'  # University red
 
 ################################################################
 
-def generate_proposals_and_targets(original_image, original_targets , transform, method = 'fast', max_proposals = 2000, iou_upper_limit = 0.7, iou_lower_limit = 0.3):
+def generate_proposals_and_targets(original_image, original_targets , transform, method = 'quality', max_proposals = 3000):
     """
     Generates proposals using the Selective Search algorithm.
 
@@ -91,7 +91,7 @@ def generate_proposals_and_targets(original_image, original_targets , transform,
     #print(type(images))
     return images, targets
 
-def apply_transform_and_label_target(proposal_images, proposal_targets, original_targets, transform, iou_upper_limit = 0.7, iou_lower_limit = 0.3):
+def apply_transform_and_label_target(proposal_images, proposal_targets, original_targets, transform, iou_upper_limit = 0.5, iou_lower_limit = 0.3):
 
 
     # Loop through each proposal
@@ -181,5 +181,3 @@ def adjust_original_target_to_proposal(image, target_proposal, gt_bbox):
 
 
 
-
-        
