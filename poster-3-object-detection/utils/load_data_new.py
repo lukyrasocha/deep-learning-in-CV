@@ -15,19 +15,23 @@ import json
 from torch.utils.data import default_collate
 from selective_search_new import  generate_proposals_and_targets
 from torch.utils.data import default_collate
+import pickle as pk
 
 
 
 class Proposals(Dataset):
-    # creat IOU_upper and lower limit as arguement
-    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes', name_data_set):
+    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes'):
 
-        final_image, final_target
-        try 
+        #TODO make a check, if the file already exist, then just take the file from there, else generate new
+        #TODO ADD upper and lower limit as input to the class 
+        # TODO implement class imbalance 
 
-        self.final_imges, self.final target = open folder
-
-        else: 
+        #final_image, final_target
+        #try 
+#
+        #self.final_imges, self.final target = open folder
+#
+        #else: 
         
         #The to lists contains a number of proposals and targets that is going to be used in training 
         self.all_proposal_images = []
@@ -74,12 +78,16 @@ class Proposals(Dataset):
                 
                 count += 1
                 print(count)
-                if count > 10:
+                if count > 2:
                     break
 
-            self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
+            pickle_save(self.all_proposal_images, self.all_proposal_targets, train='train')
+            #self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
 
-            save(self.final_image, self.final_target)
+            #save(self.final_image, self.final_target)
+
+
+
 
 
     def __len__(self):
@@ -87,8 +95,23 @@ class Proposals(Dataset):
         return len(self.all_proposal_images)
 
     def __getitem__(self, idx):
-        return self.final_image[idx], self.final_target[idx]
-        #return self.all_proposal_images[idx], self.all_proposal_targets[idx]
+        #return self.final_image[idx], self.final_target[idx]
+        return self.all_proposal_images[idx], self.all_proposal_targets[idx]
+
+
+
+def pickle_save(final_image, final_target, train):
+    if train:
+        folder_path = os.path.join('..', 'Potholes', 'train_proposals')
+
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        with open(os.path.join(folder_path, 'train_image.pkl'), 'wb') as f:
+            pk.dump(final_image, f)
+        with open(os.path.join(folder_path, 'train_target.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+#    if val:
 
 def get_xml_data(xml_path):
     tree = ET.parse(xml_path)
@@ -168,22 +191,22 @@ if __name__ == "__main__":
 
 
 
-    for batch_images, batch_targets in dataloader:
-        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
-
-        count = 0
-        # Iterate through the targets to show correspondence with images
-        for image, target in enumerate(batch_targets):            
-
-            if int(target['label']) == 1:
-                print(f"Image {image} has {len(target)} target(s):")
-                print('length of target', len(target))
-                print(type(target['gt_bbox_xmin']))
-                print(f"  Bounding box: {target['gt_bbox_xmin']:.3g}, {target['gt_bbox_ymin']:.3g}, {target['gt_bbox_xmax']:.3g}, {target['gt_bbox_ymax']:.3g}, Label: {target['label']}")
-                count += 1
-            if count >= 5:
-                break # only show 5 images
-        break         # Only show one batch
+#    for batch_images, batch_targets in dataloader:
+#        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
+#
+#        count = 0
+#        # Iterate through the targets to show correspondence with images
+#        for image, target in enumerate(batch_targets):            
+#
+#            if int(target['label']) == 1:
+#                print(f"Image {image} has {len(target)} target(s):")
+#                print('length of target', len(target))
+#                print(type(target['gt_bbox_xmin']))
+#                print(f"  Bounding box: {target['gt_bbox_xmin']:.3g}, {target['gt_bbox_ymin']:.3g}, {target['gt_bbox_xmax']:.3g}, {target['gt_bbox_ymax']:.3g}, Label: {target['label']}")
+#                count += 1
+#            if count >= 5:
+#                break # only show 5 images
+#        break         # Only show one batch
 
     #print(prop.image_proposals_list[1].shape)
     #for image, target in zip(prop.image_proposals_list, prop.target_proposals_list):
