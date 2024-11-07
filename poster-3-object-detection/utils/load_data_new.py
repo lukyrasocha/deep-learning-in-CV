@@ -81,7 +81,7 @@ class Proposals(Dataset):
                 if count > 2:
                     break
 
-            pickle_save(self.all_proposal_images, self.all_proposal_targets, train='train')
+            pickle_save(self.all_proposal_images, self.all_proposal_targets, train=True)
             #self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
 
             #save(self.final_image, self.final_target)
