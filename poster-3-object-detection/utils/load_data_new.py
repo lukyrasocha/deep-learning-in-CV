@@ -15,20 +15,14 @@ import json
 from torch.utils.data import default_collate
 from selective_search_new import  generate_proposals_and_targets
 from torch.utils.data import default_collate
+# creat IOU_upper and lower limit as arguement
 
 
+class Training_data(Dataset):
+    
+    def __init__(self, val_percent=None, seed=42, transform=None, folder_path='Potholes', iou_upper_limit=0.5, iou_lower_limit=0.5, method='fast', max_proposals=2000):
 
-class Proposals(Dataset):
-    # creat IOU_upper and lower limit as arguement
-    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes', name_data_set):
-
-        final_image, final_target
-        try 
-
-        self.final_imges, self.final target = open folder
-
-        else: 
-        
+       
         #The to lists contains a number of proposals and targets that is going to be used in training 
         self.all_proposal_images = []
         self.all_proposal_targets = []
@@ -46,13 +40,14 @@ class Proposals(Dataset):
         with open(json_path, 'r') as file:
             splits = json.load(file)
 
+        train_files = splits['train']
+        random.seed(seed)
+        random.shuffle(train_files)  
+
         #If the validation percentage for the split is set, it will create a validation set based on the existing training set
         if val_percent is not None:
             #Get all the files to calculate the precentage for validation set
             number_of_all_files = len(sorted(glob.glob(os.path.join(entire_folder_path, "annotated-images/img-*.jpg")))) #Get the number of all the files in the folder 
-            train_files = splits['train']
-            random.seed(seed)
-            random.shuffle(train_files)  
 
             # Calculate the number of validation samples
             val_count = int(number_of_all_files * val_percent/100)
@@ -63,32 +58,30 @@ class Proposals(Dataset):
             xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in new_train_files]
 
             count = 0
+        else:
+            image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in train_files]
+            xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in train_files]
 
-            for image_path, xml_path in zip(image_paths, xml_paths):
-                original_image = Image.open(image_path).convert('RGB')
-                original_targets = get_xml_data(xml_path)
 
-                proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform)
-                self.all_proposal_images.extend(proposal_images)
-                self.all_proposal_targets.extend(proposal_targets)
-                
-                count += 1
-                print(count)
-                if count > 10:
-                    break
+        for image_path, xml_path in zip(image_paths, xml_paths):
+            original_image = Image.open(image_path).convert('RGB')
+            original_targets = get_xml_data(xml_path)
 
-            self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
-
-            save(self.final_image, self.final_target)
-
+            proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform, iou_upper_limit, iou_lower_limit, method, max_proposals)
+            self.all_proposal_images.extend(proposal_images)
+            self.all_proposal_targets.extend(proposal_targets)
+            
+            count += 1
+            print(count)
+            if count > 1:
+                break
 
     def __len__(self):
         """Returns the total number of samples in the dataset."""
         return len(self.all_proposal_images)
 
     def __getitem__(self, idx):
-        return self.final_image[idx], self.final_target[idx]
-        #return self.all_proposal_images[idx], self.all_proposal_targets[idx]
+        return self.all_proposal_images[idx], self.all_proposal_targets[idx]
 
 def get_xml_data(xml_path):
     tree = ET.parse(xml_path)
@@ -161,35 +154,21 @@ if __name__ == "__main__":
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ])
-    prop = Proposals(split = 'Train', val_percent=20, transform=transform, folder_path='Potholes')
+    prop = Training_data(val_percent=20, transform=transform, folder_path='Potholes')
 
     dataloader = DataLoader(prop, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
+
+    count = 0
+    for batch_images, batch_targets in dataloader:
+        for image, target in zip(batch_images, batch_targets):
+            print(image.shape, target)
+            print()
+            count += 1
+            if count > 10:
+                break
+        
     #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
 
 
-
-    for batch_images, batch_targets in dataloader:
-        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
-
-        count = 0
-        # Iterate through the targets to show correspondence with images
-        for image, target in enumerate(batch_targets):            
-
-            if int(target['label']) == 1:
-                print(f"Image {image} has {len(target)} target(s):")
-                print('length of target', len(target))
-                print(type(target['gt_bbox_xmin']))
-                print(f"  Bounding box: {target['gt_bbox_xmin']:.3g}, {target['gt_bbox_ymin']:.3g}, {target['gt_bbox_xmax']:.3g}, {target['gt_bbox_ymax']:.3g}, Label: {target['label']}")
-                count += 1
-            if count >= 5:
-                break # only show 5 images
-        break         # Only show one batch
-
-    #print(prop.image_proposals_list[1].shape)
-    #for image, target in zip(prop.image_proposals_list, prop.target_proposals_list):
-    #    if int(target['label']) == 1:
-    #        print(target)
-    #        visualize_proposal(image, target, box_thickness=1, figname='proposals.png')
-    #        break
-    #
     #print('hello')
+
