@@ -66,27 +66,113 @@ class Proposals(Dataset):
             image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in new_train_files]
             xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in new_train_files]
 
+
+
+            # counte to keep track of the number of images
             count = 0
 
+            # storing of a class proposals and targets 
+
+            # looping over the images and xml files
             for image_path, xml_path in zip(image_paths, xml_paths):
+
+                # Initialize lists for the proposals and targets
+                class_0_proposals = []
+                class_0_targets = []
+                class_1_proposals = []
+                class_1_targets = []
+
                 original_image = Image.open(image_path).convert('RGB')
                 original_targets = get_xml_data(xml_path)
+                # Get the image id for pickling ids
+                image_id = image_path.split('/')[-1].split('.')[0]
 
-                proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform)
-                self.all_proposal_images.extend(proposal_images)
-                self.all_proposal_targets.extend(proposal_targets)
+
+                # print out every 50th image id for tracking while running
+                if count % 50 == 0:
+                    print(f"Image id {count}")
+
                 
-                count += 1
-                print(count)
-                if count > 2:
-                    break
+                # Generate proposals and targets
+                proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform)
+                print(f"Number of proposals generated for image {image_id}: {len(proposal_images)}")
+                #print(proposal_images)
+            
+                # Loop through each proposal and target
+                for image, target, in zip(proposal_images, proposal_targets):
+                    if int(target['label']) == 1:
+                        # print if label is 1 missing and write the image id
+                        class_1_proposals.append(image)
+                        class_1_targets.append(target)
+                    else:
+                        class_0_proposals.append(image)
+                        class_0_targets.append(target)                
+                #count += 1
+                #print(count)
+                #if count > len(new_train_files):
+                #    if count % 50 == 0:
+                #        print(f"Image id {image_id}")
+                #    break
 
-            pickle_save(self.all_proposal_images, self.all_proposal_targets, train=True)
-            #self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
 
-            #save(self.final_image, self.final_target)
+                # Class balancing
+                total_class_1 = len(class_1_proposals)   # 25 % of the class 0 proposals
+                total_class_0_ideal = int(total_class_1 * 3)     # 75 % of the class 0 proposals 
+                total_class_0 = len(class_0_proposals)
 
+                # sanity check 
+                #print(f"Total class 1: {total_class_1}")
+                #print(f"Total class 0: {total_class_0}")
+                #print(f"Total class 0 should have after class balancing: {total_class_0_ideal}")
+                #pickle_save(self.all_proposal_images, self.all_proposal_targets, train=True)
+                #self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
 
+                # If the number of class 0 proposals is greater than the ideal number of class 0 proposals
+                if total_class_0 > total_class_0_ideal:
+                    # Randomly sample the indices of the class 0 proposals to keep 
+                    indicies = random.sample(range(total_class_0), total_class_0_ideal)
+                    # Create new lists of class 0 proposals and targets with the sampled indices
+                    class_0_proposals_new = [class_0_proposals[i] for i in indicies]
+                    class_0_targets_new = [class_0_targets[i] for i in indicies]
+                else:
+                    class_0_proposals_new = class_0_proposals
+                    class_0_targets_new = class_0_targets
+                    
+                # sanity check that the ideal and the new class 0 proposals are the same
+                assert len(class_0_proposals_new) == total_class_0_ideal
+
+                # Combine the class 0 and class 1 proposals
+                image_proposals = class_0_proposals_new + class_1_proposals
+                image_targets = class_0_targets_new + class_1_targets
+
+                if image_proposals and image_targets:
+                    # combine the proposals and targets and shuffle them
+                    combined = list(zip(image_proposals, image_targets))
+                    random.shuffle(combined)
+                    image_proposals, image_targets = zip(*combined)
+
+                    # Append the proposals and targets to the final lists
+                    self.all_proposal_images.extend(image_proposals)
+                    self.all_proposal_targets.extend(image_targets)
+                    #print("*" * 40)
+                    # print he porposals and targets at class 0 
+                    #print(f"Class 0 proposals before class balancing: {len(class_0_proposals)}")
+                    #print(f"Class 0 targets before class balancing: {len(class_0_targets)}")
+                    #print("***************** Balancing now *****************")
+                    #print(f"Class 0 proposals after class balancing: {len(class_0_proposals_new)}")
+                    #print(f"Class 0 targets after class balancing: {len(class_0_targets_new)}")
+                    pickle_save(self.all_proposal_images, self.all_proposal_targets, train=True, index=image_id)
+
+                    # Rinse and repeat for the next image
+                    self.all_proposal_images = []
+                    self.all_proposal_targets = []
+                    count += 1
+                else:
+                    print(f"No proposals and targets found for the image {image_id}")
+                    print(f"- Proposals generated in total: {len(proposal_images)}")
+                    print(f"- Class 0 proposals: {len(class_0_proposals)}")
+                    print(f"- Class 1 proposals: {len(class_1_proposals)}")
+                    continue
 
 
 
@@ -100,18 +186,24 @@ class Proposals(Dataset):
 
 
 
-def pickle_save(final_image, final_target, train):
+def pickle_save(final_image, final_target, train, index):
     if train:
-        folder_path = os.path.join('..', 'Potholes', 'train_proposals')
+        # Use the BLACKHOLE environment variable for flexibility, ensuring absolute path
+        blackhole_path = os.getenv('BLACKHOLE', '/dtu/blackhole/17/209207')
+        folder_path_image = os.path.join(blackhole_path, 'train_proposals/image')  # This is an absolute path now
+        folder_path_target = os.path.join(blackhole_path, 'train_proposals/target')  # This is an absolute path now
 
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
+        # Create the directory in the blackhole path if it doesn't exist
+        os.makedirs(folder_path_image, exist_ok=True)
+        os.makedirs(folder_path_target, exist_ok=True)
 
-        with open(os.path.join(folder_path, 'train_image.pkl'), 'wb') as f:
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(folder_path_image, f'train_image_{index}.pkl'), 'wb') as f:
             pk.dump(final_image, f)
-        with open(os.path.join(folder_path, 'train_target.pkl'), 'wb') as f:
+        with open(os.path.join(folder_path_target, f'train_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
-#    if val:
+
+
 
 def get_xml_data(xml_path):
     tree = ET.parse(xml_path)
@@ -186,9 +278,9 @@ if __name__ == "__main__":
     ])
     prop = Proposals(split = 'Train', val_percent=20, transform=transform, folder_path='Potholes')
 
-    dataloader = DataLoader(prop, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
+    #dataloader = DataLoader(prop, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
     #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
-
+    #visualize_proposal(prop.all_proposal_images[400], prop.all_proposal_targets[0], box_thickness=2, figname='proposals.png')
 
 
 #    for batch_images, batch_targets in dataloader:
