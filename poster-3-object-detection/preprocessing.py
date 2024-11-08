@@ -14,7 +14,9 @@ if __name__ == '__main__':
     #The paths is relative to being in the poster-3-object-detection folder
     get_images_from_folder_relative = 'Potholes/annotated-images'
     get_split_from_folder_relative = 'Potholes'
-    save_data_in_folder_relative = 'Potholes/training_data'
+    save_images_in_folder_relative = 'Potholes/training_data_images'
+    save_targets_in_folder_relative = 'Potholes/training_data_targets'
+
     seed = 42
     val_percent = 20
     iou_upper_limit = 0.5
@@ -29,13 +31,16 @@ if __name__ == '__main__':
     # Ensure the dataset is accessed from the root of the repository
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__)))
     get_images_from_folder_full = os.path.join(base_path, get_images_from_folder_relative)
-    save_data_in_folder_full = os.path.join(base_path, save_data_in_folder_relative)
+    save_images_in_folder_full = os.path.join(base_path, save_images_in_folder_relative)
+    save_targets_in_folder_full = os.path.join(base_path, save_targets_in_folder_relative)
 
     # Check if the folder paths exists
     if not os.path.exists(get_images_from_folder_full):
         raise SystemExit(f"Error: Directory not found: {get_images_from_folder_full}")
-    elif not os.path.exists(save_data_in_folder_full):
-        raise SystemExit(f"Error: Directory not found: {save_data_in_folder_full}")
+    elif not os.path.exists(save_images_in_folder_full):
+        raise SystemExit(f"Error: Directory not found: {save_images_in_folder_full}")
+    elif not os.path.exists(save_targets_in_folder_full):
+        raise SystemExit(f"Error: Directory not found: {save_targets_in_folder_full}")
 
 
     # Load the splits from the JSON file
@@ -79,7 +84,7 @@ if __name__ == '__main__':
         proposal_images_balanced, proposal_targets_balanced = class_balance(proposal_images, proposal_targets, seed, count)
 
         if proposal_images_balanced is not None:
-            pickle_save(proposal_images_balanced, proposal_targets_balanced, save_data_in_folder_full, train=True, index=image_id)
+            pickle_save(proposal_images_balanced, proposal_targets_balanced, save_images_in_folder_full, save_targets_in_folder_full, train=True, index=image_id)
         count += 1
 
         break

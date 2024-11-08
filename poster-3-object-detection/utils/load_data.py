@@ -12,7 +12,110 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
+from utils.selective_search import generate_proposals_and_targets
 
+#Implement the one below
+#class Trainingset(Dataset)  
+
+class Val_and_test_data(Dataset):
+    def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', iou_upper_limit=0.5, iou_lower_limit=0.5, method='quality', max_proposals=int(2000)):
+        self.all_original_images = []
+        self.all_original_targets = []
+        self.transform = transform
+        self.iou_upper_limit = iou_upper_limit
+        self.iou_lower_limit = iou_lower_limit
+        self.method = method
+        self.max_proposals = max_proposals
+
+        # Ensure the dataset is accessed from the root of the repository
+        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        entire_folder_path = os.path.join(base_path, folder_path)
+
+        # Load the splits from the JSON file
+        json_path = os.path.join(entire_folder_path, "splits.json")
+        with open(json_path, 'r') as file:
+            splits = json.load(file)
+
+        if not os.path.exists(entire_folder_path):
+            raise FileNotFoundError(f"Directory not found: {entire_folder_path}")
+
+        train_files = splits['train']
+        random.seed(seed)
+        random.shuffle(train_files)
+
+        if split.lower() == 'val':
+            if val_percent is not None:
+                number_of_all_files = len(sorted(glob.glob(os.path.join(entire_folder_path, "annotated-images/img-*.jpg"))))
+                val_count = int(number_of_all_files * val_percent / 100)
+                new_val_files = train_files[:val_count]
+                image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in new_val_files]
+                xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in new_val_files]
+            else:
+                raise ValueError('Validation percentage is not set')
+        elif split.lower() == 'test':
+            image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['test']]
+            xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in splits['test']]
+        else:
+            raise ValueError('Use either val or test to access data')
+
+        assert len(image_paths) == len(xml_paths), "The length of images and xml files is not the same"
+
+        for image_path, xml_path in zip(image_paths, xml_paths):
+            original_image = Image.open(image_path).convert('RGB')
+            original_targets = get_xml_data(xml_path)
+            self.all_original_images.append(original_image)
+            self.all_original_targets.append(original_targets)
+
+    def __len__(self):
+        return len(self.all_original_images)
+
+    def __getitem__(self, idx):
+        original_image = self.all_original_images[idx]
+        original_targets = self.all_original_targets[idx]
+
+        # Generate proposals and targets on the fly
+        proposal_images, proposal_targets = generate_proposals_and_targets(
+            original_image, original_targets, self.transform, 
+            None, self.iou_upper_limit, self.iou_lower_limit, 
+            self.method, self.max_proposals, generate_target=False
+        )
+
+        original_image = self.transform(original_image)
+
+        return original_image, original_targets, proposal_images, proposal_targets
+
+
+def val_test_collate_fn(batch):
+    """
+    Custom collate function for a PyTorch DataLoader, used to process a batch of data 
+    where each sample contains an image and its corresponding targets.
+    It is needed because the deafult collate function expect dimensions of same size
+
+    Parameters:
+        batch (list of tuples): A list where each element is a tuple (image, target).
+            - image: A tensor representing the image.
+            - target: A list or dictionary containing the bounding box coordinates 
+                      and labels for objects detected in the image.
+
+    Returns:
+        tuple: A tuple containing:
+            - images (Tensor): A stacked tensor of images with shape 
+              (batch_size, channels, height, width), created using PyTorch's `default_collate`.
+            - targets (list): A list of original target annotations, one for each image.
+    """
+
+    batch_original_images = []
+    batch_original_targets = []
+    batch_proposal_images = []
+    batch_proposal_targets = []
+
+    for original_image, original_target, proposal_images, proposal_targets in batch:
+        batch_original_images.append(original_image)  # Append the image part to the images list
+        batch_original_targets.append(original_target)  # Append the target part to the targets list
+        batch_proposal_images.append(proposal_images)
+        batch_proposal_targets.extend(proposal_targets)
+    
+    return default_collate(batch_original_images), batch_original_targets, default_collate(batch_proposal_images), batch_proposal_targets  # Return stacked images and original targets
 
 def get_xml_data(xml_path):
     tree = ET.parse(xml_path)
@@ -50,17 +153,17 @@ def get_xml_data(xml_path):
     
     return targets
 
-def pickle_save(final_image, final_target, save_to_path_full, train, index):
+def pickle_save(final_image, final_target, save_images_path, save_targets_path, train, index):
     if train:
         # Create the directory in the blackhole path if it doesn't exist
-        os.makedirs(save_to_path_full, exist_ok=True)
+        os.makedirs(save_images_path, exist_ok=True)
+        os.makedirs(save_targets_path, exist_ok=True)
+
         # Save the files to the BLACKHOLE path
-        with open(os.path.join(save_to_path_full, f'train_image_{index}.pkl'), 'wb') as f:
+        with open(os.path.join(save_images_path, f'train_image_{index}.pkl'), 'wb') as f:
             pk.dump(final_image, f)
-        with open(os.path.join(save_to_path_full, f'train_target_{index}.pkl'), 'wb') as f:
+        with open(os.path.join(save_targets_path, f'train_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
-
-
         
 def class_balance(proposal_images, proposal_targets, seed, count):
     # Initialize lists for the proposals and targets
@@ -118,3 +221,37 @@ def class_balance(proposal_images, proposal_targets, seed, count):
 
         return None, None
 
+if __name__ == "__main__":
+    transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+    ])
+
+    start_time = time.time()
+    val = Val_and_test_data(split='test', val_percent=20, transform=transform, folder_path='Potholes')
+    dataloader_val = DataLoader(val, batch_size = 8, shuffle=True, num_workers=8, collate_fn=val_test_collate_fn)
+    end_time = time.time()
+    
+    print("Time taken to load one batch:", end_time - start_time, "seconds")
+    count = 0
+    print('check')
+
+    for batch_idx, (original_images, original_targets, proposal_images, proposal_targets) in enumerate(dataloader_val):
+
+        print(f"\nBatch {batch_idx + 1}:")
+        print(f"Original Images: {len(original_images)}")
+        print(f"Original Targets: {len(original_targets)}")
+        print(f"Proposal Images: {len(proposal_images)}")
+        print(f"Proposal Targets: {len(proposal_targets)}")
+
+        # Print details of the first image in the batch as an example
+        print("\nExample from the batch:")
+        print(f"Original Image Shape: {original_images[0].size}")
+        print(f"Original Target: {original_targets[0]}")
+        print(f"Number of Proposals: {len(proposal_images[0])}")
+        print(f"Proposal Target Example: {proposal_targets[0][:5]}")  # Print the first few proposals
+
+        # Stop after printing one batch (remove this break to print all batches)
+        break
+
+        #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)

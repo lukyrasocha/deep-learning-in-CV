@@ -100,10 +100,10 @@ def generate_proposals_and_targets(
         proposal_image = np.copy(original_image_np[y:y+h, x:x+w])
 
         proposal_target = {
-            'xmin': torch.tensor(float(x)),
-            'ymin': torch.tensor(float(y)),
-            'xmax': torch.tensor(float(x + w)),
-            'ymax': torch.tensor(float(y + h)),
+            'image_xmin': torch.tensor(float(x)),
+            'image_ymin': torch.tensor(float(y)),
+            'image_xmax': torch.tensor(float(x + w)),
+            'image_ymax': torch.tensor(float(y + h)),
             'original_image_name' : original_image_name,
         }
 
@@ -144,7 +144,7 @@ def apply_transform_and_label_target(
     
     proposal_targets : list of dict
         A list of dictionaries (e.g., `TensorDict`) representing target attributes for each proposal image. Each dictionary
-        must include bounding box keys ('xmin', 'ymin', 'xmax', 'ymax').
+        must include bounding box keys ('image_xmin', 'image_ymin', 'image_xmax', 'image_ymax').
 
     original_targets : list of dict
         A list of dictionaries representing the ground truth bounding boxes. Each dictionary must include bounding box
@@ -191,7 +191,7 @@ def apply_transform_and_label_target(
                 'xmax': gt_box['xmax'].item(),
                 'ymax': gt_box['ymax'].item()
             }
-            iou = IoU(proposal_target_copy, gt_bbox)
+            iou = IoU(gt_bbox['xmin'], gt_bbox['ymin'], gt_bbox['xmax'], gt_bbox['ymax'], proposal_target['image_xmin'],  proposal_target['image_ymin'],  proposal_target['image_xmax'],  proposal_target['image_ymax'])
             iou_values.append(iou)
 
         if iou_values:  # Ensure the list is not empty
@@ -240,7 +240,7 @@ def apply_transformation_on_proposal_image_and_target(
     proposal_target : dict
         A dictionary-like structure (e.g., a `TensorDict`) representing target attributes. Must include at least:
         - 'label': The label indicating if the proposal has a valid target (1 for valid, otherwise ignored).
-        - 'xmin', 'ymin', 'xmax', 'ymax': Bounding box coordinates.
+        - 'image_xmin', 'image_ymin', 'image_xmax', 'image_ymax': Bounding box coordinates.
     
     transform : callable
         A transformation function (e.g., a PyTorch transform) that takes an image (e.g., PIL Image) and outputs
@@ -277,10 +277,10 @@ def apply_transformation_on_proposal_image_and_target(
         proposal_target.setdefault('y_scale', torch.tensor(float(y_scale))) 
         
         # Scaling and translating the bounding box coordinates
-        gt_xmin_scaled = (gt_bbox['xmin'] - proposal_target['xmin'])  
-        gt_ymin_scaled = (gt_bbox['ymin'] - proposal_target['ymin']) 
-        gt_xmax_scaled = (gt_bbox['xmax'] - proposal_target['xmin']) * proposal_target['x_scale']
-        gt_ymax_scaled = (gt_bbox['ymax'] - proposal_target['ymin']) * proposal_target['y_scale']
+        gt_xmin_scaled = (gt_bbox['xmin'] - proposal_target['image_xmin'])  
+        gt_ymin_scaled = (gt_bbox['ymin'] - proposal_target['image_ymin']) 
+        gt_xmax_scaled = (gt_bbox['xmax'] - proposal_target['image_xmin']) * proposal_target['x_scale']
+        gt_ymax_scaled = (gt_bbox['ymax'] - proposal_target['image_ymin']) * proposal_target['y_scale']
     
         proposal_target.setdefault('gt_bbox_xmin_scaled', torch.tensor(float(gt_xmin_scaled)))
         proposal_target.setdefault('gt_bbox_ymin_scaled', torch.tensor(float(gt_ymin_scaled)))
