@@ -15,7 +15,23 @@ from torch.utils.data import default_collate
 from utils.selective_search import generate_proposals_and_targets
 
 #Implement the one below
-#class Trainingset(Dataset)  
+class Trainingset(Dataset):
+    def __init__(self, image_path, target_path):
+        self.image_path = image_path
+        self.target_path = target_path
+
+    def __len__(self):
+        return len(self.image_path)
+    
+    def __getitem__(self):
+        with open(self.image_path[idx], rb) as f:
+            proposal_image = pickle.load(f)
+
+        with open(self.image_target[idx], rb) as f:
+            proposal_target = pickle.load(f)
+
+        return proposal_image, proposal_target
+        
 
 class Val_and_test_data(Dataset):
     def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', iou_upper_limit=0.5, iou_lower_limit=0.5, method='quality', max_proposals=int(2000)):
@@ -227,31 +243,36 @@ if __name__ == "__main__":
         transforms.ToTensor(),
     ])
 
-    start_time = time.time()
-    val = Val_and_test_data(split='test', val_percent=20, transform=transform, folder_path='Potholes')
-    dataloader_val = DataLoader(val, batch_size = 8, shuffle=True, num_workers=8, collate_fn=val_test_collate_fn)
-    end_time = time.time()
-    
-    print("Time taken to load one batch:", end_time - start_time, "seconds")
-    count = 0
-    print('check')
 
-    for batch_idx, (original_images, original_targets, proposal_images, proposal_targets) in enumerate(dataloader_val):
+    ###############################################################
+    #The following code is use for the validation/test dataloader
+    ###############################################################
 
-        print(f"\nBatch {batch_idx + 1}:")
-        print(f"Original Images: {len(original_images)}")
-        print(f"Original Targets: {len(original_targets)}")
-        print(f"Proposal Images: {len(proposal_images)}")
-        print(f"Proposal Targets: {len(proposal_targets)}")
-
-        # Print details of the first image in the batch as an example
-        print("\nExample from the batch:")
-        print(f"Original Image Shape: {original_images[0].size}")
-        print(f"Original Target: {original_targets[0]}")
-        print(f"Number of Proposals: {len(proposal_images[0])}")
-        print(f"Proposal Target Example: {proposal_targets[0][:5]}")  # Print the first few proposals
-
-        # Stop after printing one batch (remove this break to print all batches)
-        break
-
-        #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
+    #start_time = time.time()
+    #val = Val_and_test_data(split='test', val_percent=20, transform=transform, folder_path='Potholes')
+    #dataloader_val = DataLoader(val, batch_size = 8, shuffle=True, num_workers=8, collate_fn=val_test_collate_fn)
+    #end_time = time.time()
+    #
+    #print("Time taken to load one batch:", end_time - start_time, "seconds")
+    #count = 0
+    #print('check')
+#
+    #for batch_idx, (original_images, original_targets, proposal_images, proposal_targets) in enumerate(dataloader_val):
+#
+    #    print(f"\nBatch {batch_idx + 1}:")
+    #    print(f"Original Images: {len(original_images)}")
+    #    print(f"Original Targets: {len(original_targets)}")
+    #    print(f"Proposal Images: {len(proposal_images)}")
+    #    print(f"Proposal Targets: {len(proposal_targets)}")
+#
+    #    # Print details of the first image in the batch as an example
+    #    print("\nExample from the batch:")
+    #    print(f"Original Image Shape: {original_images[0].size}")
+    #    print(f"Original Target: {original_targets[0]}")
+    #    print(f"Number of Proposals: {len(proposal_images[0])}")
+    #    print(f"Proposal Target Example: {proposal_targets[0][:5]}")  # Print the first few proposals
+#
+    #    # Stop after printing one batch (remove this break to print all batches)
+    #    break
+#
+    #    #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
