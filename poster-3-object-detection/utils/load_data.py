@@ -14,21 +14,35 @@ from tensordict import TensorDict
 from torch.utils.data import default_collate
 from utils.selective_search import generate_proposals_and_targets
 
+# REPLACE BY YOUR OWN PATH 
+IMAGE_DIR = '/dtu/blackhole/17/209207/train_proposals/image'
+TARGET_DIR = '/dtu/blackhole/17/209207/train_proposals/target'
+
+
 #Implement the one below
 class Trainingset(Dataset):
     def __init__(self, image_path, target_path):
         self.image_path = image_path
         self.target_path = target_path
+        
+        # Accessing from the root directory
+        self.image_path = glob.glob(os.path.join(self.image_path, '*.pkl'))
+        self.target_path = glob.glob(os.path.join(self.target_path, '*.pkl'))
+
+        assert len(self.image_path) == len(self.target_path), "The length of images and targets is not the same"
 
     def __len__(self):
         return len(self.image_path)
     
-    def __getitem__(self):
-        with open(self.image_path[idx], rb) as f:
-            proposal_image = pickle.load(f)
+    def __getitem__(self, idx):
+        image = self.image_path[idx]
+        target = self.target_path[idx]
 
-        with open(self.image_target[idx], rb) as f:
-            proposal_target = pickle.load(f)
+        with open(image, 'rb') as f:
+            proposal_image = pk.load(f)
+
+        with open(target, 'rb') as f:
+            proposal_target = pk.load(f)
 
         return proposal_image, proposal_target
         
