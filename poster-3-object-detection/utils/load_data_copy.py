@@ -98,30 +98,27 @@ class Val_and_test_data(Dataset):
 
         assert len(image_paths) == len(xml_paths), "The length of images and xml files is not the same"
 
-        count = 0
-        missing_counter = 0
 
 
         for image_path in image_paths:
             original_image = Image.open(image_path).convert('RGB')
             image_id = os.path.basename(image_path).split('.')[0]
             
-            # Generate proposals without ground truth
+            # Generate proposals 
             proposal_images, proposal_targets = generate_proposals_and_targets(
                 original_image, None, self.transform, 
                 None, self.iou_upper_limit, self.iou_lower_limit, 
                 self.method, self.max_proposals, generate_target=False
             )
             
-            # Since we don't have labels, we shouldn't perform class balancing
-            # Simply save the proposals
+            # proposals and targets 
             self.all_proposal_images.extend(proposal_images)
             self.all_proposal_targets.extend(proposal_targets)
             
-            # Save proposals (without labels) to pickle
+            # pickle vals 
             pickle_save_val(self.all_proposal_images, self.all_proposal_targets, train=True, index=image_id)
             
-            # Clear lists for the next image
+            # Rinse and repeat 
             self.all_proposal_images = []
             self.all_proposal_targets = []
 
