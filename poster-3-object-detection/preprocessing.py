@@ -86,5 +86,3 @@ if __name__ == '__main__':
         if proposal_images_balanced is not None:
             pickle_save(proposal_images_balanced, proposal_targets_balanced, save_images_in_folder_full, save_targets_in_folder_full, train=True, index=image_id)
         count += 1
-
-        break

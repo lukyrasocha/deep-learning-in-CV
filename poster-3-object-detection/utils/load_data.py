@@ -14,24 +14,42 @@ from tensordict import TensorDict
 from torch.utils.data import default_collate
 from utils.selective_search import generate_proposals_and_targets
 
-#Implement the one below
-class Trainingset(Dataset):
-    def __init__(self, image_path, target_path):
-        self.image_path = image_path
-        self.target_path = target_path
+# Custom collate function for variable-sized inputs
+def collate_fn(batch):
+    images = [item[0] for item in batch]
+    targets = [item[1] for item in batch]
+    flat_images = [img for sublist in images for img in sublist]
+    flat_targets = [tgt for sublist in targets for tgt in sublist]
+    return torch.stack(flat_images), flat_targets
+
+class PotholeTrainDataset(Dataset):
+    def __init__(self, images_dir, targets_dir, transform=None, batch_size=32):
+        self.images_dir = images_dir
+        self.targets_dir = targets_dir
+        self.image_files = sorted(os.listdir(images_dir))
+        self.target_files = sorted(os.listdir(targets_dir))
+        self.transform = transform
+        self.batch_size = batch_size
 
     def __len__(self):
-        return len(self.image_path)
-    
-    def __getitem__(self):
-        with open(self.image_path[idx], rb) as f:
-            proposal_image = pickle.load(f)
+        return len(self.image_files)
 
-        with open(self.image_target[idx], rb) as f:
-            proposal_target = pickle.load(f)
-
-        return proposal_image, proposal_target
+    def __getitem__(self, idx):
+        with open(os.path.join(self.images_dir, self.image_files[idx]), 'rb') as img_f:
+            images = pk.load(img_f)
+        with open(os.path.join(self.targets_dir, self.target_files[idx]), 'rb') as tgt_f:
+            targets = pk.load(tgt_f)
         
+        sample_indices = random.sample(range(len(images)), min(self.batch_size, len(images)))
+        sampled_images = [images[i] for i in sample_indices]
+        sampled_targets = [targets[i] for i in sample_indices]
+        
+        if self.transform:
+            # Apply transform only if the image is not already a tensor
+            sampled_images = [self.transform(img) if not isinstance(img, torch.Tensor) else img for img in sampled_images]
+        
+        return sampled_images, sampled_targets
+
 
 class Val_and_test_data(Dataset):
     def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', iou_upper_limit=0.5, iou_lower_limit=0.5, method='quality', max_proposals=int(2000)):
@@ -230,7 +248,6 @@ def class_balance(proposal_images, proposal_targets, seed, count):
 
         return image_proposals, image_targets
     else:
-        print(f"No proposals and targets found for the image {image_id}")
         print(f"- Proposals generated in total: {len(proposal_images)}")
         print(f"- Class 0 proposals: {len(class_0_proposals)}")
         print(f"- Class 1 proposals: {len(class_1_proposals)}")
