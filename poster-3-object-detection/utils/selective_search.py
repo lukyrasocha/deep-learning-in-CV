@@ -1,372 +1,300 @@
-import pickle
-import matplotlib as mpl
-from load_data import Potholes
-from torchvision import transforms
+
 import torch
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from torchvision.transforms.functional import to_pil_image
+
 from PIL import Image
-from visualize import visualize_proposals
 from tensordict import TensorDict
-################################################################
-### move later to visualize.py
+from utils.metrics import IoU
+from typing import Callable, Tuple, Dict, List
+from torchvision import transforms
 
-mpl.rcParams.update(mpl.rcParamsDefault)
-plt.rcParams.update({'text.usetex': True})
+def generate_proposals_and_targets(
+    original_image: 'PIL.Image.Image',
+    original_targets: List[Dict[str, torch.Tensor]],
+    transform: Callable[[np.ndarray], torch.Tensor],
+    original_image_name: str,
+    iou_upper_limit: float,
+    iou_lower_limit: float,
+    method: str,
+    max_proposals: int,
+    generate_target: bool 
+) -> Tuple[List[torch.Tensor], List[Dict[str, torch.Tensor]]]:
 
-# Set global font size for title, x-label, and y-label
-plt.rcParams['axes.titlesize'] = 20
-plt.rcParams['axes.labelsize'] = 16
-
-# Set global font size for x and y tick labels
-plt.rcParams['xtick.labelsize'] = 16
-plt.rcParams['ytick.labelsize'] = 16
-
-# Set global font size for the legend
-plt.rcParams['legend.fontsize'] = 11
-
-# Set global font size for the figure title
-plt.rcParams['figure.titlesize'] = 42
-
-color_primary = '#990000'  # University red
-
-
-################################################################
-
-
-def generate_proposals_selective_search(image_tensor, max_proposals=5000, type='fast'):
     """
-    Generates proposals using the Selective Search algorithm.
+    Generates proposals using the Selective Search algorithm, applies transformations to the proposal images, and 
+    labels them based on the Intersection over Union (IoU) with ground truth targets. The function returns a list of 
+    transformed proposal images and their corresponding labeled targets.
 
-    Args:
-        image_tensor (Tensor): The image tensor for which to generate proposals.
-        max_proposals (int): The maximum number of proposals to return.
-        type (str): The type of Selective Search to use. Options are 'fast' and 'quality'.
+    Parameters:
+    -----------
+    original_image : PIL.Image.Image
+        The original image from which the proposals will be generated. The image is expected to be in HxWxC format.
+    
+    original_targets : list of dict
+        A list of dictionaries, each representing a ground truth bounding box. Each dictionary contains bounding 
+        box keys ('xmin', 'ymin', 'xmax', 'ymax') representing the coordinates of the ground truth box.
 
+    transform : callable
+        A transformation function that takes an image (np.array) and returns a transformed tensor. This 
+        transformation is applied to each proposal image.
+
+    original_image_name : str
+        Name of the image so we know where the proposal image comes from
+
+    iou_upper_limit : float
+        The upper threshold for Intersection over Union (IoU). Proposals with an IoU greater than this value are 
+        labeled as positive (1).
+
+    iou_lower_limit : float
+        The lower threshold for IoU. Proposals with an IoU smaller than this value are labeled as negative (0).
+
+    method : str
+        The type of Selective Search to use. The available options are:
+        - 'fast': Faster but lower quality proposals.
+        - 'quality': Higher quality but slower proposals.
+
+    max_proposals : int
+        The maximum number of proposals to generate. The function will return up to this number of proposals.
+    
+    generate_target:
+        For validation and test we don't know the target and therefore we can not generate it
     Returns:
-        list: A list of TensorDict objects, each containing bounding box coordinates.
+    --------
+    tuple
+        A tuple containing:
+        - images : list of torch.Tensor
+            A list of transformed proposal images represented as PyTorch tensors.
+        
+        - targets : list of dict
+            A list of dictionaries where each dictionary contains:
+            - 'label': Indicates whether the proposal is positive (1) or negative (0).
+            - Updated bounding box coordinates (if applicable).
     """
+
+    
     # Convert tensor to a NumPy array (HxWxC format)
-    image_np = np.array(to_pil_image(image_tensor))
+    original_image_np = np.array(original_image)
 
     # Initialize selective search
     selection_search = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
-    selection_search.setBaseImage(image_np)
+    selection_search.setBaseImage(original_image_np)
 
-    if type == 'fast':
+    if method == 'fast':
         selection_search.switchToSelectiveSearchFast()
-    elif type == 'quality':
+    elif method == 'quality':
         selection_search.switchToSelectiveSearchQuality()
 
     # Run selective search to get bounding boxes
-    rects = selection_search.process()
+    coord_proposals = selection_search.process()
 
     # Limit the number of proposals
-    rects = rects[:max_proposals]
+    coord_proposals = coord_proposals[:max_proposals]
 
     # Convert rects to proposals in TensorDict format
-    proposals = []
-    for (x, y, w, h) in rects:
-        proposal = {
-            'xmin': torch.tensor(float(x)),
-            'ymin': torch.tensor(float(y)),
-            'xmax': torch.tensor(float(x + w)),
-            'ymax': torch.tensor(float(y + h)),
-            'labels': torch.tensor(-1, dtype=torch.int64)  # -1 for unlabeled
+    proposal_images = []
+    proposal_targets = []
+    proposal_images_tensor = []
+
+    for (x, y, w, h) in coord_proposals:
+        proposal_image = np.copy(original_image_np[y:y+h, x:x+w])
+
+        proposal_target = {
+            'image_xmin': torch.tensor(float(x)),
+            'image_ymin': torch.tensor(float(y)),
+            'image_xmax': torch.tensor(float(x + w)),
+            'image_ymax': torch.tensor(float(y + h)),
+            'original_image_name' : original_image_name,
         }
-        proposals.append(proposal)
 
-    return proposals
+        proposal_images.append(proposal_image)
+        proposal_targets.append(proposal_target)
 
-#####################################################################################################################################
-#I just coppied it here because it was, but it is from the matrics by Jone 
+        if generate_target is False:
+            proposal_image = Image.fromarray(proposal_image)
+            proposal_images_tensor.append(transform(proposal_image))
+            
+        
+    if generate_target is False:
+        return proposal_images_tensor, proposal_targets
 
-def IoU(box1, box2):
-    '''
-    Calculates the Intersection over Union (IoU) of two rectangles.
-    (The O in MABO)
-    '''
-    # Set coordinates for intersection of box1 and box2
-    x_left = max(box1['xmin'], box2['xmin'])
-    y_top = max(box1['ymin'], box2['ymin'])
-    x_right = min(box1['xmax'], box2['xmax'])
-    y_bottom = min(box1['ymax'], box2['ymax'])
+    elif generate_target is True:
+        images, targets = apply_transform_and_label_target(proposal_images, proposal_targets, original_targets, transform, iou_upper_limit, iou_lower_limit)
+        return images, targets
 
-    # Return 0 if no intersection
-    if x_right < x_left or y_bottom < y_top:
-        return 0.0
-    
-    # Calculate areas of intersection, box1, box2 and union
-    intersection_area = (x_right - x_left) * (y_bottom - y_top)
-    box1_area = (box1['xmax'] - box1['xmin']) * (box1['ymax'] - box1['ymin'])
-    box2_area = (box2['xmax'] - box2['xmin']) * (box2['ymax'] - box2['ymin'])
-    union_area = box1_area + box2_area - intersection_area
-
-    # Intersection over Union (IoU)
-    iou = intersection_area / union_area
-    return iou
-#####################################################################################################################################
+        
 
 
-
-def calculate_recall(proposals, ground_truth_boxes, iou_threshold):
+def apply_transform_and_label_target(
+    proposal_images: List[np.ndarray],
+    proposal_targets: List[Dict[str, torch.Tensor]],
+    original_targets: List[Dict[str, torch.Tensor]],
+    transform: Callable[[np.ndarray], torch.Tensor],
+    iou_upper_limit: float,
+    iou_lower_limit: float
+) -> Tuple[List[torch.Tensor], List[Dict[str, torch.Tensor]]]:
     """
-    Calculates recall for a given IoU threshold using all proposals
-    and stores all matches for each ground truth box in a dictionary, including coordinates.
+    Applies a transformation to proposal images, calculates the IoU (Intersection over Union) with ground truth targets,
+    and labels the proposal target based on IoU thresholds. The transformed images and labeled targets are returned.
 
-    Args:
-        proposals (list): List of TensorDict objects containing proposal bounding box coordinates.
-        ground_truth_boxes (list): List of TensorDict objects containing ground truth bounding box coordinates.
-        iou_threshold (float): IoU threshold to consider a proposal as a match.
+    Parameters:
+    -----------
+    proposal_images : list of numpy.ndarray
+        A list of input proposal images, each represented as a 3D array (height, width, channels).
+    
+    proposal_targets : list of dict
+        A list of dictionaries (e.g., `TensorDict`) representing target attributes for each proposal image. Each dictionary
+        must include bounding box keys ('image_xmin', 'image_ymin', 'image_xmax', 'image_ymax').
+
+    original_targets : list of dict
+        A list of dictionaries representing the ground truth bounding boxes. Each dictionary must include bounding box
+        keys ('xmin', 'ymin', 'xmax', 'ymax').
+
+    transform : callable
+        A transformation function (e.g., a PyTorch transform) that takes an image (e.g., PIL Image) and outputs
+        a transformed tensor.
+
+    iou_upper_limit : float
+        The IoU threshold above which a proposal is considered to match a ground truth box and is labeled as positive (1).
+
+    iou_lower_limit : float
+        The IoU threshold below which a proposal is considered as negative (0).
 
     Returns:
-        float: Recall for the specified IoU threshold.
-        dict: Dictionary where each key is a ground truth box index and each value is a list of matched proposals,
-              with proposal index, IoU, and bounding box coordinates.
-        list: List of all unique proposals that have at least one IoU match above the threshold.
+    --------
+    tuple
+        A tuple containing:
+        - images : list of torch.Tensor
+            The list of transformed proposal images as PyTorch tensors.
+        - targets : list of dict
+            The list of updated proposal target dictionaries with added keys:
+            - 'label': Indicates whether the proposal is positive (1) or negative (0).
+            - Updated bounding box coordinates if applicable.
     """
-    matches = {}
-    matched_gt_boxes = set()
-    matching_proposals = set()  #Store unique proposal indices that match any gt box 
-                                # sets also also much faster and make sense to use here
-                                # similar to mathematical sets 
+
 
     # Loop through each proposal
-    for prop_idx, proposal in enumerate(proposals):
-        proposal_bbox = {
-            'xmin': proposal['xmin'].item(),
-            'ymin': proposal['ymin'].item(),
-            'xmax': proposal['xmax'].item(),
-            'ymax': proposal['ymax'].item()
-        }
+    images = []
+    targets = []
+    for proposal_image, proposal_target in zip(proposal_images, proposal_targets):
 
         # Track matches for each ground truth box
-        for gt_idx, gt_box in enumerate(ground_truth_boxes):
+        iou_values = []
+        for gt_box in original_targets:
+
+            # copy an instance for the proposal target so we don't overwrite it
+            proposal_target_copy = proposal_target.copy()
+
             gt_bbox = {
                 'xmin': gt_box['xmin'].item(),
                 'ymin': gt_box['ymin'].item(),
                 'xmax': gt_box['xmax'].item(),
                 'ymax': gt_box['ymax'].item()
             }
-            iou = IoU(proposal_bbox, gt_bbox)
+            iou = IoU(gt_bbox['xmin'], gt_bbox['ymin'], gt_bbox['xmax'], gt_bbox['ymax'], proposal_target['image_xmin'],  proposal_target['image_ymin'],  proposal_target['image_xmax'],  proposal_target['image_ymax'])
+            iou_values.append(iou)
+
+        if iou_values:  # Ensure the list is not empty
+            iou_max = max(iou_values)
+            iou_max_index = iou_values.index(iou_max)  # Find the index of the maximum IoU
 
             # Add to matches if IoU is above threshold
-            if iou >= iou_threshold:
-                if gt_idx not in matches:
-                    matches[gt_idx] = []
-                matches[gt_idx].append({
-                    'proposal_idx': prop_idx,
-                    'iou': iou,
-                    'proposal_bbox': proposal_bbox
-                })
-                matched_gt_boxes.add(gt_idx)
-                matching_proposals.add(prop_idx)  # Add to the set of matching proposals
+            if iou_max > iou_upper_limit:
+                proposal_target_copy.setdefault('label', torch.tensor(1, dtype=torch.int64))
 
-    # Calculate recall
-    recall = len(matched_gt_boxes) / len(ground_truth_boxes) if ground_truth_boxes else 0.0
+                proposal_image_transformed, proposal_target_copy = apply_transformation_on_proposal_image_and_target(proposal_image, proposal_target_copy, transform, original_targets[iou_max_index])
+                images.append(proposal_image_transformed)
+                targets.append(proposal_target_copy)
 
-    # Convert matching_proposals set to a list and retrieve corresponding proposals
-    all_matching_proposals = [proposals[idx] for idx in sorted(matching_proposals)]
+            elif iou_max < iou_lower_limit:
+                proposal_target_copy.setdefault('label', torch.tensor(0, dtype=torch.int64))
+                proposal_image_transformed, proposal_target_copy = apply_transformation_on_proposal_image_and_target(proposal_image, proposal_target_copy, transform, None)
 
-    return recall, matches, all_matching_proposals
-
-
-def visualize_proposals_and_gt(image, ground_truth, proposals, iou_threshold):
-    # Convert the image tensor to a format compatible with matplotlib
-    if isinstance(image, torch.Tensor):
-        image = image.permute(1, 2, 0).cpu().numpy()  # Change dimensions from CxHxW to HxWxC
-
-    # Create the plot
-    fig, ax = plt.subplots(1, figsize=(10, 10))
-    ax.imshow(image)
-    ax.set_title(f'Image with Ground Truth and Proposal Bounding Boxes with IoU {iou_threshold}', color=color_primary)
-
-    # Plot ground truth bounding boxes in green
-    for gt_box in ground_truth:
-        xmin, ymin, xmax, ymax = gt_box['xmin'], gt_box['ymin'], gt_box['xmax'], gt_box['ymax']
-        width, height = xmax - xmin, ymax - ymin
-        rect = patches.Rectangle((xmin, ymin), width, height, linewidth=2, edgecolor='green', facecolor='none')
-        ax.add_patch(rect)
-        ax.text(xmin, ymin - 5, 'Ground Truth', color='green', fontsize=12)
-
-    # Plot proposal bounding boxes in red
-    for proposal in proposals:
-        xmin, ymin, xmax, ymax = proposal['xmin'], proposal['ymin'], proposal['xmax'], proposal['ymax']
-        width, height = xmax - xmin, ymax - ymin
-        rect = patches.Rectangle((xmin, ymin), width, height, linewidth=1, edgecolor='red', facecolor='none')
-        ax.add_patch(rect)
-        ax.text(xmin, ymin - 5, 'Proposal', color='red', fontsize=10)
-
-    plt.axis('off')
-    plt.savefig('proposals_ground_truth.png')
-    plt.show()
-
-
-
-def generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=False, quality='fast'):
+                images.append(proposal_image_transformed)
+                targets.append(proposal_target_copy)
     
-    # Initialize lists to store all proposals and ground truth boxes
-    all_image_proposals = []
+    return images, targets
 
 
-    for i in range(num_images):
-        # Load image and ground truth boxes
-        #index = i + np.random.randint(0, 500)
-        #index = 48
-        index = 75
-        image, target = potholes_dataset[index]
 
-        # the index is 
-        print(f"The index is {index}")
+def apply_transformation_on_proposal_image_and_target(
+    proposal_image: np.ndarray,
+    proposal_target: Dict[str, torch.Tensor],
+    transform: Callable[[np.ndarray], torch.Tensor],
+    gt_bbox: Dict[str, torch.Tensor]
+) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
+
+    """
+    Applies a transformation to an input proposal image and rescales its corresponding target properties, if it exist.
+
+    This function processes a given proposal image represented as a `numpy.ndarray`, along with a proposal target
+    and a ground truth bounding box (both provided as dictionary structures). It checks if the proposal target
+    is labeled (i.e., has `label` set to 1), and if so, applies a scaling transformation to the image and updates
+    the proposal target's bounding box coordinates accordingly.
+
+    Parameters:
+    -----------
+    proposal_image : numpy.ndarray
+        The input proposal image, represented as a 3D array (height, width, channels).
+    
+    proposal_target : dict
+        A dictionary-like structure (e.g., a `TensorDict`) representing target attributes. Must include at least:
+        - 'label': The label indicating if the proposal has a valid target (1 for valid, otherwise ignored).
+        - 'image_xmin', 'image_ymin', 'image_xmax', 'image_ymax': Bounding box coordinates.
+    
+    transform : callable
+        A transformation function (e.g., a PyTorch transform) that takes an image (e.g., PIL Image) and outputs
+        a transformed tensor.
+
+    gt_bbox : dict
+        A dictionary-like structure representing the ground truth bounding box with keys:
+        - 'xmin', 'ymin', 'xmax', 'ymax': Coordinates of the bounding box.
+
+    Returns:
+    --------
+    tuple
+        A tuple containing:
+        - proposal_image_tensor : torch.Tensor
+            The transformed image as a PyTorch tensor.
+        - proposal_target : dict
+            The updated proposal target dictionary with added keys:
+            - 'x_scale', 'y_scale': The scaling factors for width and height.
+            - 'gt_bbox_xmin_scaled', 'gt_bbox_ymin_scaled', 'gt_bbox_xmax_scaled', 'gt_bbox_ymax_scaled': Scaled coordinates of the bounding box.
+    """
+
+
+    original_height, original_width, _ = proposal_image.shape
+    proposal_image = Image.fromarray(proposal_image)
+
+    proposal_image_tensor = transform(proposal_image)
+    _, new_height, new_width = proposal_image_tensor.shape
+
+    x_scale = new_width / original_width
+    y_scale = new_height / original_height
+
+    if int(proposal_target['label']) == 1:
+        proposal_target.setdefault('x_scale', torch.tensor(float(x_scale))) 
+        proposal_target.setdefault('y_scale', torch.tensor(float(y_scale))) 
         
-        ground_truth_count = len(target)
+        # Scaling and translating the bounding box coordinates
+        gt_xmin_scaled = (gt_bbox['xmin'] - proposal_target['image_xmin'])  
+        gt_ymin_scaled = (gt_bbox['ymin'] - proposal_target['image_ymin']) 
+        gt_xmax_scaled = (gt_bbox['xmax'] - proposal_target['image_xmin']) * proposal_target['x_scale']
+        gt_ymax_scaled = (gt_bbox['ymax'] - proposal_target['image_ymin']) * proposal_target['y_scale']
+    
+        proposal_target.setdefault('gt_bbox_xmin_scaled', torch.tensor(float(gt_xmin_scaled)))
+        proposal_target.setdefault('gt_bbox_ymin_scaled', torch.tensor(float(gt_ymin_scaled)))
+        proposal_target.setdefault('gt_bbox_xmax_scaled', torch.tensor(float(gt_xmax_scaled)))
+        proposal_target.setdefault('gt_bbox_ymax_scaled', torch.tensor(float(gt_ymax_scaled)))
+
+    return proposal_image_tensor, proposal_target
+                
+
+
+
+
+
+
+
+
         
-        # Generate proposals using selective search
-        proposals = generate_proposals_selective_search(image, max_proposals=9000, type=quality)
-        
-        # Calculate recall and get all matching proposals
-        recall, matches, all_matching_proposals = calculate_recall(proposals, target, iou_threshold)
-        
-        # Store the matching proposals in the desired format
-        image_proposals = []
-        for proposal in all_matching_proposals:
-            proposal_dict = TensorDict({
-                'xmin': proposal['xmin'],
-                'ymin': proposal['ymin'],
-                'xmax': proposal['xmax'],
-                'ymax': proposal['ymax'],
-                'labels': torch.tensor(1, dtype=torch.int64) 
-            })
-            image_proposals.append(proposal_dict)
-        
-        # Append to the list of all proposals
-        all_image_proposals.append({
-            'image': image,
-            'proposals': image_proposals,
-            'ground_truhs': target,  
-        })
-        
-    # added a pickle, since it might be smart to do this only once instead of every time
-    # we run the model 
-    if pickle:
-        with open(f'proposals_iou_{iou_threshold}.pkl', 'wb') as f:
-            pickle.dump(all_image_proposals, f)
-
-
-    return all_image_proposals
-
-
-if __name__ == "__main__":
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-    ])
-    # Initialize the dataset
-    potholes_dataset = Potholes(split='Train', folder_path='Potholes', transform=transform)
-
-
-
-    # Process 10 images from the dataset
-    num_images = 1
-    iou_threshold = 0
-    # Generate proposals for the entire dataset
-    all_image_proposals = generate_proposals_for_entire_dataset(iou_threshold, num_images, pickle=False)
-
-    # get the image from the all_image_proposals dictionary 
-    image = all_image_proposals[0]['image']
-    image_proposals = all_image_proposals[0]['proposals']
-    target = all_image_proposals[0]['ground_truhs']
-
-
-# Visualize the proposals
-visualize_proposals_and_gt(image, target, image_proposals, iou_threshold)
-
-
-
-
-#### Visualize the proposals #### 
-#if __name__ == "__main__":
-#    transform = transforms.Compose([
-#        #transforms.Resize((256, 256)),
-#        transforms.ToTensor(),
-#    ])
-#    # Initialize the dataset
-#    potholes_dataset = Potholes(split='Train', folder_path='Potholes', transform=transform)
-#
-#        # Load image and ground truth boxes
-#
-#    # Define IoU thresholds
-#    iou_thresholds = np.arange(0.0, 1.05, 0.01)  # IoU thresholds from 0.1 to 1.0 with a step of 0.05
-#
-#    # Process 10 images from the dataset
-## Process 10 images from the dataset
-#num_images = 10
-## Initialize the plot
-#fig, axes = plt.subplots(1, 2, figsize=(14, 6))
-#
-#for i in range(num_images):
-#    # Load image and ground truth boxes
-#    image, target = potholes_dataset[i + np.random.randint(0, 500)]
-#    ground_truth_count = len(target)  # Assuming target is a list or dict of ground truths
-#
-#    # Generate proposals using selective search
-#    proposals = generate_proposals_selective_search(image, max_proposals=9000, type='quality')
-#    print(f"Number of proposals for image {i+1}: {len(proposals)}")
-#
-#    # Lists to store recall and number of proposals for each threshold for the current image
-#    recalls = []
-#    number_of_proposals = []
-#
-#    for threshold in iou_thresholds:
-#        recall, matches, all_matching_proposals = calculate_recall(proposals, target, threshold)
-#        recalls.append(recall)
-#        number_of_proposals.append(len(all_matching_proposals))
-#
-#        # Optional: Print matches and matching proposals for debugging purposes
-#        print(f"\nIoU Threshold: {threshold:.2f}")
-#        print(f"Recall: {recall:.4f}")
-#        print("Matches:")
-#        for gt_idx, matched_props in matches.items():
-#            print(f"  Ground truth box {gt_idx}:")
-#            for match in matched_props:
-#                print(f"    Proposal {match['proposal_idx']} - IoU: {match['iou']:.4f} - BBox: {match['proposal_bbox']}")
-#        print(f"Number of unique matching proposals: {len(all_matching_proposals)}")
-#            
-#        # Plot Number of Proposals vs IoU Threshold for the current image on the second subplot
-#    axes[1].plot(
-#            iou_thresholds,
-#            number_of_proposals,
-#            marker='o',
-#            label=f'Image {i+1} (Ground truths: {ground_truth_count})'
-#        )
-#        
-#        # Plot Recall vs IoU Threshold for the current image on the first subplot
-#    axes[0].plot(
-#            iou_thresholds,
-#            recalls,
-#            marker='o',
-#            label=f'Image {i+1} (Ground truths: {ground_truth_count})'
-#        )
-#
-## Add titles, labels, and legends to the subplots
-#axes[0].set_title("Recall vs IoU Threshold for Each Image")
-#
-#axes[0].set_xlabel("IoU Threshold")
-#axes[0].set_ylabel("Recall")
-#axes[0].legend(loc='best')
-#axes[0].grid(True)
-#
-#axes[1].set_title("Number of Matching Proposals vs IoU Threshold for Each Image")
-#axes[1].set_xlabel("IoU Threshold")
-#axes[1].set_yscale('log')  # Set the y-axis to logarithmic scale
-#axes[1].set_ylabel("Number of Matching Proposals")
-#axes[1].legend(loc='best')
-#axes[1].grid(True)
-#
-## Adjust layout and show the plot
-#plt.tight_layout()
-#plt.savefig('recall_proposals.svg')
-#plt.show()

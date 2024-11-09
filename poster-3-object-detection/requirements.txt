@@ -7,3 +7,4 @@ wandb
 matplotlib
 tensordict
 jason
+opencv-contrib-python

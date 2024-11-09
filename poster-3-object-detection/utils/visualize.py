@@ -121,12 +121,48 @@ def visualize_proposals(image, proposals, num_proposals=500, box_thickness=1, fi
         xmax = proposal['xmax'].item()
         ymax = proposal['ymax'].item()
         
-        rect = patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,
+        rect = patches.Rectangle((xmin, ymin), abs(xmax - xmin), abs(ymax - ymin),
                                  linewidth=box_thickness, edgecolor=color_primary, facecolor='none')
         ax.add_patch(rect)
 
     
     plt.axis('off')
     plt.tight_layout()
-    plt.savefig(f"figures/{figname}", bbox_inches='tight', dpi=300)
+    plt.savefig(f"../figures/{figname}", bbox_inches='tight', dpi=300)
+    plt.show()
+
+
+def visualize_proposal(image_proposal, target_proposal, box_thickness=1, figname='proposals.png'):
+
+    # Convert image to PIL Image if it's a tensor or numpy array
+    if isinstance(image_proposal, torch.Tensor):
+        # Scale image to 0-255 if necessary
+        if image_proposal.max() <= 1:
+            image_proposal = image_proposal * 255
+        image_proposal = image_proposal.byte().permute(1, 2, 0).cpu().numpy()  # Convert to HxWxC and numpy array
+        image_proposal = Image.fromarray(image_proposal)
+    elif isinstance(image_proposal, np.ndarray):
+        # Ensure image is in RGB format if it's BGR
+        if image_proposal.shape[-1] == 3:  # Check if image has 3 channels
+            image_proposal = cv2.cvtColor(image_proposal, cv2.COLOR_BGR2RGB)
+        image_proposal = Image.fromarray(image_proposal)
+
+    # Set up plot
+    plt.figure(figsize=(10, 10))
+    plt.imshow(image_proposal)
+    ax = plt.gca()
+    
+
+    xmin = target_proposal['gt_bbox_xmin'].item()
+    ymin = target_proposal['gt_bbox_ymin'].item()
+    xmax = target_proposal['gt_bbox_xmax'].item()
+    ymax = target_proposal['gt_bbox_ymax'].item()
+    
+    rect = patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin,linewidth=box_thickness, edgecolor=color_primary, facecolor='none')
+    ax.add_patch(rect)
+
+    
+    plt.axis('off')
+    plt.tight_layout()
+    plt.savefig(f"../figures/{figname}", bbox_inches='tight', dpi=300)
     plt.show()
