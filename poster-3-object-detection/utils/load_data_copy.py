@@ -50,8 +50,8 @@ class Trainingset(Dataset):
 
 class Val_and_test_data(Dataset):
     def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', iou_upper_limit=0.5, iou_lower_limit=0.5, method='quality', max_proposals=int(2000)):
-        self.all_original_images = []
-        self.all_original_targets = []
+        self.all_proposal_images = []
+        self.all_proposal_targets = []
         self.transform = transform
         self.iou_upper_limit = iou_upper_limit
         self.iou_lower_limit = iou_lower_limit
@@ -101,109 +101,30 @@ class Val_and_test_data(Dataset):
         count = 0
         missing_counter = 0
 
-        self.all_proposal_images = []
-        self.all_proposal_targets = []
-        for image_path, xml_path in zip(image_paths, xml_paths):
-    
-            # Initialize lists for the proposals and targets
-            class_0_proposals = []
-            class_0_targets = []
-            class_1_proposals = []
-            class_1_targets = []
-    
+
+        for image_path in image_paths:
             original_image = Image.open(image_path).convert('RGB')
-            original_targets = get_xml_data(xml_path)
-            # Get the image id for pickling ids
-            image_id = image_path.split('/')[-1].split('.')[0]
-    
-            # Generate proposals and targets
+            image_id = os.path.basename(image_path).split('.')[0]
+            
+            # Generate proposals without ground truth
             proposal_images, proposal_targets = generate_proposals_and_targets(
-                original_image, original_targets, self.transform, 
+                original_image, None, self.transform, 
                 None, self.iou_upper_limit, self.iou_lower_limit, 
                 self.method, self.max_proposals, generate_target=False
             )
-    
-            # print out every 50th image id for tracking while running
-            print(f"Image id {count}")
-    
-            # Loop through each proposal and target
-            for image, target, in zip(proposal_images, proposal_targets):
-                if int(target['label']) == 1:
-                    # print if label is 1 missing and write the image id
-                    class_1_proposals.append(image)
-                    class_1_targets.append(target)
-                else:
-                    class_0_proposals.append(image)
-                    class_0_targets.append(target)                
-            #count += 1
-            #print(count)
-            #if count > len(new_train_files):
-            #    if count % 50 == 0:
-            #        print(f"Image id {image_id}")
-            #    break
+            
+            # Since we don't have labels, we shouldn't perform class balancing
+            # Simply save the proposals
+            self.all_proposal_images.extend(proposal_images)
+            self.all_proposal_targets.extend(proposal_targets)
+            
+            # Save proposals (without labels) to pickle
+            pickle_save_val(self.all_proposal_images, self.all_proposal_targets, train=True, index=image_id)
+            
+            # Clear lists for the next image
+            self.all_proposal_images = []
+            self.all_proposal_targets = []
 
-
-            # Class balancing
-            total_class_1 = len(class_1_proposals)   # 25 % of the class 0 proposals
-            total_class_0_ideal = int(total_class_1 * 3)     # 75 % of the class 0 proposals 
-            total_class_0 = len(class_0_proposals)
-
-            # sanity check 
-            #print(f"Total class 1: {total_class_1}")
-            #print(f"Total class 0: {total_class_0}")
-            #print(f"Total class 0 should have after class balancing: {total_class_0_ideal}")
-            #pickle_save(self.all_proposal_images, self.all_proposal_targets, train=True)
-            #self.final_image, self.final_target = class_imbalance(all_proposal_images, all_proposal_target)
-
-            # If the number of class 0 proposals is greater than the ideal number of class 0 proposals
-            if total_class_0 > total_class_0_ideal:
-                # Randomly sample the indices of the class 0 proposals to keep 
-                indicies = random.sample(range(total_class_0), total_class_0_ideal)
-                # Create new lists of class 0 proposals and targets with the sampled indices
-                class_0_proposals_new = [class_0_proposals[i] for i in indicies]
-                class_0_targets_new = [class_0_targets[i] for i in indicies]
-            else:
-                class_0_proposals_new = class_0_proposals
-                class_0_targets_new = class_0_targets
-                
-            # sanity check that the ideal and the new class 0 proposals are the same
-            assert len(class_0_proposals_new) == total_class_0_ideal
-
-            # Combine the class 0 and class 1 proposals
-            image_proposals = class_0_proposals_new + class_1_proposals
-            image_targets = class_0_targets_new + class_1_targets
-
-            if image_proposals and image_targets:
-                # combine the proposals and targets and shuffle them
-                combined = list(zip(image_proposals, image_targets))
-                random.shuffle(combined)
-                image_proposals, image_targets = zip(*combined)
-
-                # Append the proposals and targets to the final lists
-                self.all_proposal_images.extend(image_proposals)
-                self.all_proposal_targets.extend(image_targets)
-                #print("*" * 40)
-                # print he porposals and targets at class 0 
-                #print(f"Class 0 proposals before class balancing: {len(class_0_proposals)}")
-                #print(f"Class 0 targets before class balancing: {len(class_0_targets)}")
-                #print("***************** Balancing now *****************")
-                #print(f"Class 0 proposals after class balancing: {len(class_0_proposals_new)}")
-                #print(f"Class 0 targets after class balancing: {len(class_0_targets_new)}")
-                pickle_save_val(self.all_proposal_images, self.all_proposal_targets, train=True, index=image_id)
-
-                # Rinse and repeat for the next image
-                self.all_proposal_images = []
-                self.all_proposal_targets = []
-                count += 1
-            else:
-                print(f"No proposals and targets found for the image {image_id}")
-                #print(f"- Proposals generated in total: {len(proposal_images)}")
-                print(f"- Class 0 proposals: {len(class_0_proposals)}")
-                print(f"- Class 1 proposals: {len(class_1_proposals)}")
-                missing_counter += 1
-                continue
-        # print number of missing 
-        print(f"Number of missing images: {missing_counter}")
 
 
     def __len__(self):
