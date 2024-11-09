@@ -5,9 +5,126 @@ import numpy as np
 
 from PIL import Image
 from tensordict import TensorDict
-from utils.metrics import IoU
-from typing import Callable, Tuple, Dict, List
+from metrics import IoU
+from typing import Callable, Tuple, Dict, List, Optional, Any
 from torchvision import transforms
+
+def generate_proposals_and_targets_copy(
+    original_image: 'PIL.Image.Image',
+    original_targets: List[Dict[str, torch.Tensor]],
+    transform: Callable[[Image.Image], torch.Tensor],
+    original_image_name: str,
+    iou_upper_limit: float,
+    iou_lower_limit: float,
+    method: str,
+    max_proposals: int,
+    generate_target: bool,
+    return_images: bool = True  # New parameter to control image return
+) -> Tuple[Optional[List[torch.Tensor]], List[Dict[str, Any]]]:
+    """
+    Generates proposals using the Selective Search algorithm and labels them based on the Intersection over Union (IoU)
+    with ground truth targets. The function returns a list of proposal images (if requested) and their corresponding
+    targets.
+
+    Parameters:
+    -----------
+    original_image : PIL.Image.Image
+        The original image from which the proposals will be generated.
+    
+    original_targets : list of dict
+        A list of dictionaries, each representing a ground truth bounding box. Each dictionary contains bounding 
+        box keys ('xmin', 'ymin', 'xmax', 'ymax') representing the coordinates of the ground truth box.
+
+    transform : callable
+        A transformation function that takes an image (PIL.Image) and returns a transformed tensor. This 
+        transformation is applied to each proposal image.
+
+    original_image_name : str
+        Name of the image so we know where the proposal image comes from.
+
+    iou_upper_limit : float
+        The upper threshold for Intersection over Union (IoU). Proposals with an IoU greater than this value are 
+        labeled as positive (1).
+
+    iou_lower_limit : float
+        The lower threshold for IoU. Proposals with an IoU smaller than this value are labeled as negative (0).
+
+    method : str
+        The type of Selective Search to use. The available options are:
+        - 'fast': Faster but lower quality proposals.
+        - 'quality': Higher quality but slower proposals.
+
+    max_proposals : int
+        The maximum number of proposals to generate. The function will return up to this number of proposals.
+    
+    generate_target : bool
+        For validation and test we don't know the target and therefore we cannot generate it.
+
+    return_images : bool, default=True
+        If True, the function returns the transformed proposal images.
+        If False, the function returns None in place of the images.
+
+    Returns:
+    --------
+    tuple
+        A tuple containing:
+        - images : list of torch.Tensor or None
+            A list of transformed proposal images represented as PyTorch tensors if return_images is True.
+            None if return_images is False.
+        
+        - targets : list of dict
+            A list of dictionaries where each dictionary contains:
+            - Bounding box coordinates and any other relevant information.
+    """
+
+    # Convert image to a NumPy array (HxWxC format)
+    original_image_np = np.array(original_image)
+
+    # Initialize selective search
+    selection_search = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
+    selection_search.setBaseImage(original_image_np)
+
+    if method == 'fast':
+        selection_search.switchToSelectiveSearchFast()
+    elif method == 'quality':
+        selection_search.switchToSelectiveSearchQuality()
+
+    # Run selective search to get bounding boxes
+    coord_proposals = selection_search.process()
+
+    # Limit the number of proposals
+    coord_proposals = coord_proposals[:max_proposals]
+
+    # Initialize lists for proposal targets and images (if needed)
+    proposal_targets = []
+    proposal_images_tensor = [] if return_images else None
+
+    for (x, y, w, h) in coord_proposals:
+        proposal_target = {
+            'image_xmin': float(x),
+            'image_ymin': float(y),
+            'image_xmax': float(x + w),
+            'image_ymax': float(y + h),
+            'original_image_name': original_image_name,
+        }
+
+        proposal_targets.append(proposal_target)
+
+        if return_images:
+            # Crop the proposal image
+            proposal_image = original_image.crop((x, y, x + w, y + h))
+            # Apply transformation if provided
+            if transform:
+                proposal_image = transform(proposal_image)
+            proposal_images_tensor.append(proposal_image)
+
+    if generate_target:
+        # Implement target generation logic here if needed
+        # Since you mentioned that generate_target is False for validation/test, this section can be left as is.
+        pass
+
+    return proposal_images_tensor, proposal_targets
+
 
 def generate_proposals_and_targets(
     original_image: 'PIL.Image.Image',
@@ -111,6 +228,13 @@ def generate_proposals_and_targets(
         proposal_targets.append(proposal_target)
 
         if generate_target is False:
+            #print("\nGenerating proposals without targets.")
+            #print(f"  Number of Proposals: {len(proposal_images)}")
+            # Optionally, print sizes of some proposal images
+            #if proposal_images:
+            #    print(f"  First Proposal Image Shape: {proposal_images[0].shape}")
+            #else:
+            #    print("  No proposal images generated.")
             proposal_image = Image.fromarray(proposal_image)
             proposal_images_tensor.append(transform(proposal_image))
             
