@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
-from selective_search import generate_proposals_and_targets_v_2
+from selective_search import generate_proposals_for_test_and_val
 
 
 # REPLACE BY YOUR OWN PATH 

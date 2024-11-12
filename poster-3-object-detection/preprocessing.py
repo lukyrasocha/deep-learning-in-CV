@@ -4,14 +4,14 @@ import random
 import glob
 
 from PIL import Image
-from utils.load_data import get_xml_data, pickle_save, class_balance, pickle_save_v_2
-from utils.selective_search import generate_proposals_and_targets, generate_proposals_and_targets_v_2
+from utils.load_data import get_xml_data, pickle_save_training, class_balance, pickle_save_for_test_and_val
+from utils.selective_search import generate_proposals_and_targets_for_training, generate_proposals_for_test_and_val
 from torchvision import transforms
 from utils.logger import logger
 
 def ensure_dir(directory):
     if not os.path.exists(directory):
-        print("Directiory does not exists, Creating directory: ", directory)
+        print(f"Directiory {(directory)} does not exists, Creating directory: ", directory)
         os.makedirs(directory)
 
 if __name__ == '__main__':
@@ -102,7 +102,7 @@ if __name__ == '__main__':
             if count % 50 == 0:
                 print(f"Processing training image {count}: {image_id}")
             # Generate proposals and targets
-            proposal_images, proposal_targets = generate_proposals_and_targets(
+            proposal_images, proposal_targets = generate_proposals_and_targets_for_training(
                 original_image, original_targets, transform, image_id,
                 IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
                 generate_target=True
@@ -113,7 +113,7 @@ if __name__ == '__main__':
             )
 
             if proposal_images_balanced is not None:
-                pickle_save(
+                pickle_save_training(
                     proposal_images_balanced, proposal_targets_balanced,
                     save_images_in_folder_full, save_targets_in_folder_full,
                     train=True, index=image_id
@@ -137,7 +137,7 @@ if __name__ == '__main__':
                 print(f"Processing validation image {count}: {image_id}")
 
             # Generate proposals
-            proposals = generate_proposals_and_targets_v_2(
+            proposals = generate_proposals_for_test_and_val(
                 original_image, original_targets, transform, image_id,
                 IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
                 generate_target=False, return_images=False
@@ -145,7 +145,7 @@ if __name__ == '__main__':
 
             if proposals is not None:
                 # Save the proposals and image_id
-                pickle_save_v_2(
+                pickle_save_for_test_and_val(
                     None, proposals,
                     None, save_targets_in_folder_full_val,
                     train=False, index=image_id, image_id=image_id
@@ -168,7 +168,7 @@ if __name__ == '__main__':
                 print(f"Processing test image {count}: {image_id}")
 
             # Generate proposals
-            proposals = generate_proposals_and_targets_v_2(
+            proposals = generate_proposals_for_test_and_val(
                 original_image, original_targets, transform, image_id,
                 IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
                 generate_target=False, return_images=False
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
             if proposals is not None:
                 # Save the proposals and image_id
-                pickle_save_v_2(
+                pickle_save_for_test_and_val(
                     None, proposals,
                     None, save_targets_in_folder_full_test,
                     train=False, index=image_id, image_id=image_id

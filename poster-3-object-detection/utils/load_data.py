@@ -12,7 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
-from utils.selective_search import generate_proposals_and_targets
+from utils.selective_search import generate_proposals_and_targets_for_training
 
 # REPLACE BY YOUR OWN PATH 
 IMAGE_DIR = '/dtu/blackhole/17/209207/train_proposals/image'
@@ -104,7 +104,7 @@ class Val_and_test_data(Dataset):
         original_targets = self.all_original_targets[idx]
 
         # Generate proposals and targets on the fly
-        proposal_images, proposal_targets = generate_proposals_and_targets(
+        proposal_images, proposal_targets = generate_proposals_and_targets_for_training(
             original_image, original_targets, self.transform, 
             None, self.iou_upper_limit, self.iou_lower_limit, 
             self.method, self.max_proposals, generate_target=False
@@ -183,7 +183,7 @@ def get_xml_data(xml_path):
     
     return targets
 
-def pickle_save(final_image, final_target, save_images_path, save_targets_path, train, index):
+def pickle_save_training(final_image, final_target, save_images_path, save_targets_path, train, index):
     if train:
         # Create the directory in the blackhole path if it doesn't exist
         os.makedirs(save_images_path, exist_ok=True)
@@ -197,7 +197,7 @@ def pickle_save(final_image, final_target, save_images_path, save_targets_path, 
 
 # utils/load_data.py
 
-def pickle_save_v_2(proposal_images, proposal_targets, images_dir, targets_dir, train=True, index=None, image_id=None):
+def pickle_save_for_test_and_val(proposal_images, proposal_targets, images_dir, targets_dir, train=True, index=None, image_id=None):
     # Prepare data to be saved
     data = {
         'image_id': image_id,
