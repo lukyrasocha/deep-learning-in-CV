@@ -90,8 +90,8 @@ if __name__ == '__main__':
     
     if TRAIN_PROPOSALS:
         logger.working_on(f"Creating training proposals with and targets {len(new_train_files)} images")
-        image_paths = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in train_files]
-        xml_paths = [os.path.join(get_images_from_folder_full, file) for file in train_files]
+        image_paths = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in new_train_files]
+        xml_paths = [os.path.join(get_images_from_folder_full, file) for file in new_train_files]
 
         count = 0
         for image_path, xml_path in zip(image_paths, xml_paths):
