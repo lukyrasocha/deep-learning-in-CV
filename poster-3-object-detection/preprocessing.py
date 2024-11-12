@@ -4,7 +4,7 @@ import random
 import glob
 
 from PIL import Image
-from utils.load_data import get_xml_data, pickle_save_training, class_balance, pickle_save_for_test_and_val
+from utils.load_data import get_xml_data, pickle_save, class_balance, pickle_save_for_test_and_val
 from utils.selective_search import generate_proposals_and_targets_for_training, generate_proposals_for_test_and_val
 from torchvision import transforms
 from utils.logger import logger
@@ -16,7 +16,7 @@ def ensure_dir(directory):
 
 if __name__ == '__main__':
 
-    TRAIN_PROPOSALS = True
+    TRAIN_PROPOSALS = False 
     VALIDATION_PROPOSALS = True
     TEST_PROPOSALS = True 
 
@@ -113,10 +113,10 @@ if __name__ == '__main__':
             )
 
             if proposal_images_balanced is not None:
-                pickle_save_training(
+                pickle_save(
                     proposal_images_balanced, proposal_targets_balanced,
                     save_images_in_folder_full, save_targets_in_folder_full,
-                    train=True, index=image_id
+                    index=image_id, split='train'
                 )
             count += 1
         logger.success("Training proposals and targets created successfully")
@@ -145,10 +145,10 @@ if __name__ == '__main__':
 
             if proposals is not None:
                 # Save the proposals and image_id
-                pickle_save_for_test_and_val(
+                pickle_save(
                     None, proposals,
                     None, save_targets_in_folder_full_val,
-                    train=False, index=image_id, image_id=image_id
+                    index=image_id, split='val'
                 )
             count += 1
         logger.success("Validation proposals created successfully")
@@ -176,10 +176,10 @@ if __name__ == '__main__':
 
             if proposals is not None:
                 # Save the proposals and image_id
-                pickle_save_for_test_and_val(
+                pickle_save(
                     None, proposals,
                     None, save_targets_in_folder_full_test,
-                    train=False, index=image_id, image_id=image_id
+                    index=image_id, split='test'
                 )
             count += 1
         logger.success("Test proposals created successfully")
