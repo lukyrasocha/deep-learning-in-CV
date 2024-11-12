@@ -6,7 +6,8 @@ import json
 import xml.etree.ElementTree as ET
 import random
 import pickle as pk
-
+import numpy as np
+import matplotlib.pyplot as plt
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
@@ -105,7 +106,7 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
 
 class Val_and_test_data(Dataset):
     def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', 
-                 method='quality', max_proposals=300, blackhole_path='/dtu/blackhole/17/209207/val_proposals/target'):
+                 method='quality', max_proposals=2000, blackhole_path='/dtu/blackhole/17/209207/val_proposals'):
         self.transform = transform
         self.method = method
         self.max_proposals = max_proposals
@@ -141,11 +142,22 @@ class Val_and_test_data(Dataset):
     def __getitem__(self, idx):
         image_path = self.image_paths[idx]
         original_image = Image.open(image_path).convert('RGB')
-        
-        if self.transform:
-            original_image = self.transform(original_image)
-            
-        return original_image, self.proposal_coords[idx], idx
+
+        coords = self.proposal_coords[idx]
+        proposal_images = []
+
+        for coord in coords:
+            x_min, y_min, x_max, y_max = coord
+            proposal_image = original_image.crop((x_min, y_min, x_max, y_max))
+
+            if self.transform:
+                proposal_image = self.transform(proposal_image)
+            proposal_images.append(proposal_image)
+
+        # Optionally, return the image ID for tracking
+        image_id = self.image_ids[idx]
+
+        return original_image, proposal_images, coords, image_id
 
 
 
@@ -260,9 +272,15 @@ def val_test_collate_fn(batch):
     batch_image_ids = []
 
     for proposal_images, coords, image_id in batch:
-        batch_proposal_images.append(proposal_images)
-        batch_coords.append(coords)
-        batch_image_ids.append(image_id)
+        batch_proposal_images.extend(proposal_images)
+        batch_coords.extend(coords)
+        batch_image_ids.extend([image_id] * len(proposal_images))
+
+    # Stack the proposal images into a tensor
+    if batch_proposal_images:
+        batch_proposal_images = torch.stack(batch_proposal_images)
+    else:
+        batch_proposal_images = torch.Tensor()
 
     return batch_proposal_images, batch_coords, batch_image_ids
 
@@ -331,23 +349,22 @@ def pickle_save_val(final_target, train, index):
         #    pk.dump(final_image, f)
         with open(os.path.join(folder_path_target, f'val_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
-def custom_collate_fn(batch):
+def val_test_collate_fn(batch):
     """
     Custom collate function to handle variable numbers of proposals per image.
     """
-    original_images = []
-    all_proposal_coords = []
-    image_indices = []
+    batch_original_images = []
+    batch_proposal_images = []
+    batch_coords = []
+    batch_image_ids = []
 
-    for i, (original_image, coords, idx) in enumerate(batch):
-        original_images.append(original_image)
-        all_proposal_coords.extend([(idx, coord) for coord in coords])
-        image_indices.extend([idx] * len(coords))
+    for original_image, proposal_images, coords, image_id in batch:
+        batch_original_images.append(original_image)
+        batch_proposal_images.append(proposal_images)
+        batch_coords.append(coords)
+        batch_image_ids.append(image_id)
 
-    # Stack the original images
-    original_images = torch.stack(original_images, dim=0)  # Shape: [batch_size, C, H, W]
-
-    return original_images, all_proposal_coords, image_indices
+    return batch_original_images, batch_proposal_images, batch_coords, batch_image_ids
 
         
 def class_balance(proposal_images, proposal_targets, seed, count):
@@ -405,32 +422,115 @@ def class_balance(proposal_images, proposal_targets, seed, count):
         print(f"- Class 1 proposals: {len(class_1_proposals)}")
 
         return None, None
+    
+def plot_original_and_crops(original_image, cropped_images, n=5):
+    """
+    Plots the original image and n cropped images.
+    """
+    # Convert PIL image to numpy array for plotting
+    original_image_np = np.array(original_image)
+
+    # Determine the number of cropped images to display
+    n_crops = min(n, len(cropped_images))
+
+    # Create subplots
+    fig, axes = plt.subplots(1, n_crops + 1, figsize=(15, 5))
+
+    # Plot the original image
+    axes[0].imshow(original_image_np)
+    axes[0].set_title('Original Image')
+    axes[0].axis('off')
+
+    # Plot the cropped images
+    for i in range(n_crops):
+        crop_np = cropped_images[i].permute(1, 2, 0).numpy()  # Convert tensor to numpy array
+        # If the images were normalized during transform, you might need to unnormalize them
+        axes[i + 1].imshow(crop_np)
+        axes[i + 1].set_title(f'Crop {i + 1}')
+        axes[i + 1].axis('off')
+
+    plt.tight_layout()
+    plt.savefig('original_and_crops.svg', dpi=300)
+    plt.show()
 if __name__ == "__main__":
 
+    import time
     transform = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-])
+        transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
+        transforms.ToTensor(),
+    ])
 
-val_dataset = Val_and_test_data(split='val', val_percent=20, transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals/target')
-print(len(val_dataset))
-val_loader = DataLoader(
-    val_dataset,
-    batch_size=4,
-    shuffle=False,
-    num_workers=2,
-    collate_fn=val_test_collate_fn
-)
+    val_dataset = Val_and_test_data(split='val', val_percent=20, transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
+    print(f"Total images in dataset: {len(val_dataset)}")
 
-print("Printing first few batches:")
-for batch_idx, (cropped_images, coords, image_ids) in enumerate(val_loader):
-    print(f"\nBatch {batch_idx + 1}:")
-    print(f"Number of cropped images: {len(cropped_images)}")
-    print(f"Number of coordinates: {len(coords)}")
-    print(f"Image IDs: {image_ids}")
-    
-    if batch_idx >= 2:  # Print first 3 batches only
+    # Adjust batch_size to manage memory usage
+    batch_size = 1  # Since each image can have up to 2000 proposals
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        collate_fn=val_test_collate_fn
+    )
+
+    # Start timer
+    start_time = time.time()
+
+    # Number of cropped images to display
+    n_crops_to_display = 15  # You can set this to any number you like
+
+    # Process the validation set
+    for batch_idx, (original_images, proposal_images_list, coords_list, image_ids) in enumerate(val_loader):
+        print(f"\nBatch {batch_idx + 1}:")
+        print(f"Number of images in batch: {len(original_images)}")
+        print(f"Image IDs: {image_ids}")
+        print("-" * 50)  # Separator between batches
+
+        # Since batch_size=1, we'll work with the first (and only) item
+        original_image = original_images[0]
+        #print(len(original_image))
+        proposal_images = proposal_images_list[0]
+        print(len(proposal_images))
+        coords = coords_list[0]
+        image_id = image_ids[0]
+
+        # Plot the original image and n cropped images
+        plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
+
+        # If you wish to process the proposal_images through your model, you can stack them
+        proposal_images_tensor = torch.stack(proposal_images)  # Shape: [num_proposals, 3, H, W]
+        # outputs = model(proposal_images_tensor)
+
+        # For demonstration, let's just simulate processing time
+        time.sleep(0.1)  # Simulate computation
         break
+        # Break after first batch for demonstration purposes
+        
+
+    # End timer
+    end_time = time.time()
+
+    # Calculate elapsed time
+    elapsed_time = end_time - start_time
+    print(f"Total time to run the batch: {elapsed_time:.2f} seconds")
+
+#val_loader = DataLoader(
+#    val_dataset,
+#    batch_size=4,
+#    shuffle=False,
+#    num_workers=2,
+#    collate_fn=val_test_collate_fn
+#)
+#
+#print("Printing first few batches:")
+#for batch_idx, (cropped_images, coords, image_ids) in enumerate(val_loader):
+#    print(f"\nBatch {batch_idx + 1}:")
+#    print(f"Number of cropped images: {len(cropped_images)}")
+#    print(f"Number of coordinates: {len(coords)}")
+#    print(f"Image IDs: {image_ids}")
+#    
+#    if batch_idx >= 2:  # Print first 3 batches only
+#        break
 #    print("\nValidation Dataset Information:")
 #    print(f"Total number of samples: {len(val_dataset)}")
 #    import matplotlib.pyplot as plt
