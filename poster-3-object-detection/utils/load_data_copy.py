@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
-from selective_search import generate_proposals_and_targets_copy
+from selective_search import generate_proposals_and_targets_v_2
 
 
 # REPLACE BY YOUR OWN PATH 
@@ -21,7 +21,7 @@ from selective_search import generate_proposals_and_targets_copy
 
 TRAIN_IMAGE_DIR = '/dtu/blackhole/17/209207/train_proposals/image'
 TRAIN_TARGET_DIR = '/dtu/blackhole/17/209207/train_proposals/target'
-VAL_PROPOSALS = 'Potholes/validation_proposals'
+VAL_PROPOSALS = 'Potholes/val_proposals'
 
 
 
@@ -65,22 +65,29 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
     Returns:
         tuple: Lists of image paths, proposal coordinates, and image IDs
     """
+    # Initialize lists for the image paths, proposal coordinates, and image IDs
     image_paths = []
     proposal_coords = []
     image_ids = []
 
     for file in files:
+        # construct the path to the image and XML file and the pickle file
         image_path = os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg'))
         image_id = os.path.basename(image_path).split('.')[0]
         proposal_pickle_path = os.path.join(blackhole_path, f'val_target_{image_id}.pkl')
+        #TODO: Loop through the pickle file and load image path and proposal coordinates
 
+        # Skip to the next if the pickle file does not exist
         if not os.path.exists(proposal_pickle_path):
             continue
 
+        # Load the proposals from the pickle file
         try:
             with open(proposal_pickle_path, 'rb') as f:
                 proposal_targets = pk.load(f)
                 
+
+            # Extract the coordinates from the proposals
             coords = []
             for target in proposal_targets:
                 try:
@@ -88,12 +95,19 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
                     y_min = int(target['image_ymin'])
                     x_max = int(target['image_xmax'])
                     y_max = int(target['image_ymax'])
-                    
+
+                    # Ensure the coordinates are valid and append to the list
                     if x_max > x_min and y_max > y_min:
+                        #coords.append(torch.tensordict({
+                        #    'image_xmin': torch.tensor(x_min, dtype=torch.float32),
+                        #    'image_ymin': torch.tensor(y_min, dtype=torch.float32),
+                        #    'image_xmax': torch.tensor(x_max, dtype=torch.float32),
+                        #    'image_ymax': torch.tensor(y_max, dtype=torch.float32)
+                        #}))
                         coords.append((x_min, y_min, x_max, y_max))
                 except KeyError:
                     continue
-
+            # Append the image path, proposal coordinates, and image ID
             if coords:
                 image_paths.append(image_path)
                 proposal_coords.append(coords)
@@ -105,12 +119,16 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
     return image_paths, proposal_coords, image_ids
 
 class Val_and_test_data(Dataset):
+#    def __init__(self, transform=None, folder_path='Potholes', 
+#                 method='quality', max_proposals=2000, blackhole_path='/dtu/blackhole/17/209207/val_proposals'):
+
     def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', 
                  method='quality', max_proposals=2000, blackhole_path='/dtu/blackhole/17/209207/val_proposals'):
         self.transform = transform
         self.method = method
         self.max_proposals = max_proposals
         
+        # Ensure the dataset is accessed from the root of the repository 
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         entire_folder_path = os.path.join(base_path, folder_path)
         
@@ -119,7 +137,8 @@ class Val_and_test_data(Dataset):
             
         if not os.path.exists(entire_folder_path):
             raise FileNotFoundError(f"Directory not found: {entire_folder_path}")
-
+# #TODO!: LINES 138  151 should be deleted!
+        # loading of the training split
         train_files = splits['train']
         random.seed(seed)
         random.shuffle(train_files)
@@ -133,31 +152,37 @@ class Val_and_test_data(Dataset):
             files = splits['test']
         else:
             raise ValueError('Use either val or test to access data')
-
+#       
         self.image_paths, self.proposal_coords, self.image_ids = load_proposal_data(files, entire_folder_path, blackhole_path)
 
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
+        # Load the original image and its index and convert to RGB
         image_path = self.image_paths[idx]
         original_image = Image.open(image_path).convert('RGB')
-
+        image_id = self.image_ids[idx]
+        # Load the proposal coordinates
         coords = self.proposal_coords[idx]
-        proposal_images = []
 
+        # List for storing the cropped proposal images    
+        cropped_proposals_images = []
+
+        # Crop the proposals from the original image
         for coord in coords:
             x_min, y_min, x_max, y_max = coord
             proposal_image = original_image.crop((x_min, y_min, x_max, y_max))
 
+            # Apply the transform if available (e.g., convert to tensor, resize)
             if self.transform:
                 proposal_image = self.transform(proposal_image)
-            proposal_images.append(proposal_image)
 
-        # Optionally, return the image ID for tracking
-        image_id = self.image_ids[idx]
+            # Append the cropped proposal image
+            cropped_proposals_images.append(proposal_image)
 
-        return original_image, proposal_images, coords, image_id
+
+        return original_image, cropped_proposals_images, coords, image_id
 
 
 
@@ -263,10 +288,11 @@ class Val_and_test_data(Dataset):
 
 
 
-def val_test_collate_fn(batch):
+def val_test_collate_fn_cropped(batch):
     """
     Custom collate function to handle variable numbers of proposals per image.
     """
+
     batch_proposal_images = []
     batch_coords = []
     batch_image_ids = []
@@ -274,10 +300,13 @@ def val_test_collate_fn(batch):
     for proposal_images, coords, image_id in batch:
         batch_proposal_images.extend(proposal_images)
         batch_coords.extend(coords)
+        # List where the imamge id is repeated for each proposal image
+        # for example if there are 3 proposals for an image, the image id will be repeated 3 times
         batch_image_ids.extend([image_id] * len(proposal_images))
 
-    # Stack the proposal images into a tensor
-    if batch_proposal_images:
+    # Stack the proposal images into a tensor to ensure the 
+    # [batch_size, 3, H, W] shape is maintained
+    if batch_proposal_images:  
         batch_proposal_images = torch.stack(batch_proposal_images)
     else:
         batch_proposal_images = torch.Tensor()
@@ -349,7 +378,8 @@ def pickle_save_val(final_target, train, index):
         #    pk.dump(final_image, f)
         with open(os.path.join(folder_path_target, f'val_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
-def val_test_collate_fn(batch):
+            
+def val_test_collate_fn_cropped(batch):
     """
     Custom collate function to handle variable numbers of proposals per image.
     """
@@ -459,8 +489,8 @@ if __name__ == "__main__":
         transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
         transforms.ToTensor(),
     ])
-
     val_dataset = Val_and_test_data(split='val', val_percent=20, transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
+    #val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
     print(f"Total images in dataset: {len(val_dataset)}")
 
     # Adjust batch_size to manage memory usage
@@ -470,7 +500,7 @@ if __name__ == "__main__":
         batch_size=batch_size,
         shuffle=True,
         num_workers=4,
-        collate_fn=val_test_collate_fn
+        collate_fn=val_test_collate_fn_cropped
     )
 
     # Start timer

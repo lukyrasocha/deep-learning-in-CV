@@ -5,11 +5,11 @@ import numpy as np
 
 from PIL import Image
 from tensordict import TensorDict
-from metrics import IoU
+from utils.metrics import IoU
 from typing import Callable, Tuple, Dict, List, Optional, Any
 from torchvision import transforms
 
-def generate_proposals_and_targets_copy(
+def generate_proposals_and_targets_v_2(
     original_image: 'PIL.Image.Image',
     original_targets: List[Dict[str, torch.Tensor]],
     transform: Callable[[Image.Image], torch.Tensor],

@@ -194,8 +194,37 @@ def pickle_save(final_image, final_target, save_images_path, save_targets_path, 
             pk.dump(final_image, f)
         with open(os.path.join(save_targets_path, f'train_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
+
+# utils/load_data.py
+
+def pickle_save_v_2(proposal_images, proposal_targets, images_dir, targets_dir, train=True, index=None, image_id=None):
+    # Prepare data to be saved
+    data = {
+        'image_id': image_id,
+        'proposals': proposal_targets,
+    }
+    # For training data, include images
+    if train and proposal_images is not None:
+        data['images'] = proposal_images
+
+    # Determine the filename
+    if index is not None:
+        filename = f"data_{index}.pkl"
+    else:
+        filename = "data.pkl"
+
+    # Save to the appropriate directory
+    if train and images_dir is not None:
+        # Save images and targets
+        with open(os.path.join(images_dir, filename), 'wb') as f:
+            pk.dump(data, f)
+    elif targets_dir is not None:
+        # Save only targets (and image_id)
+        with open(os.path.join(targets_dir, filename), 'wb') as f:
+            pk.dump(data, f)
+
         
-def class_balance(proposal_images, proposal_targets, seed, count):
+def class_balance(proposal_images, proposal_targets, seed, image_id):
     # Initialize lists for the proposals and targets
     class_1_proposals = []
     class_1_targets = []
