@@ -183,8 +183,8 @@ def get_xml_data(xml_path):
     
     return targets
 
-def pickle_save_training(final_image, final_target, save_images_path, save_targets_path, train, index):
-    if train:
+def pickle_save(final_image, final_target, save_images_path, save_targets_path, index, split='train' ):
+    if split == 'train':
         # Create the directory in the blackhole path if it doesn't exist
         os.makedirs(save_images_path, exist_ok=True)
         os.makedirs(save_targets_path, exist_ok=True)
@@ -195,14 +195,25 @@ def pickle_save_training(final_image, final_target, save_images_path, save_targe
         with open(os.path.join(save_targets_path, f'train_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
 
+    elif split == 'val':
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_targets_path, f'val_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+    elif split == 'test':
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_targets_path, f'test_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+
+
 # utils/load_data.py
 
 def pickle_save_for_test_and_val(proposal_images, proposal_targets, images_dir, targets_dir, train=True, index=None, image_id=None):
     # Prepare data to be saved
-    data = {
-        'image_id': image_id,
-        'proposals': proposal_targets,
-    }
+    data = proposal_targets
     # For training data, include images
     if train and proposal_images is not None:
         data['images'] = proposal_images

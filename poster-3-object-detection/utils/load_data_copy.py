@@ -16,12 +16,11 @@ from torch.utils.data import default_collate
 from selective_search import generate_proposals_for_test_and_val
 
 
-# REPLACE BY YOUR OWN PATH 
-
-
-TRAIN_IMAGE_DIR = '/dtu/blackhole/17/209207/train_proposals/image'
-TRAIN_TARGET_DIR = '/dtu/blackhole/17/209207/train_proposals/target'
-VAL_PROPOSALS = 'Potholes/val_proposals'
+# REPLACE BY YOUR OWN BLACKHOLE 
+TRAIN_IMAGE_DIR = '/dtu/blackhole/17/209207/training_data/images/'
+TRAIN_TARGET_DIR = '/dtu/blackhole/17/209207/training_data/targets/'
+VAL_PROPOSALS = '/dtu/blackhole/17/209207/validation_data/targets/'
+TEST_PROPOSALS = '/dtu/blackhole/17/209207/test_data/targets/'
 
 
 
@@ -57,130 +56,113 @@ class Trainingset(Dataset):
     
 
 def load_proposal_data(files, entire_folder_path, blackhole_path):
-    """Load proposal data for validation and testing.
-    Args:
-        files (list): List of file names
-        entire_folder_path (str): Path to dataset folder
-        blackhole_path (str): Path to blackhole storage
-    Returns:
-        tuple: Lists of image paths, proposal coordinates, and image IDs
-    """
-    # Initialize lists for the image paths, proposal coordinates, and image IDs
     image_paths = []
     proposal_coords = []
     image_ids = []
 
     for file in files:
-        # construct the path to the image and XML file and the pickle file
-        image_path = os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg'))
-        image_id = os.path.basename(image_path).split('.')[0]
-        proposal_pickle_path = os.path.join(blackhole_path, f'val_target_{image_id}.pkl')
-        #TODO: Loop through the pickle file and load image path and proposal coordinates
+        image_id = file  # Now 'image_id' is '12'
 
-        # Skip to the next if the pickle file does not exist
+        image_path = os.path.join(entire_folder_path, "annotated-images", f"img-{image_id}.jpg")
+        if blackhole_path == VAL_PROPOSALS:
+            proposal_pickle_path = os.path.join(blackhole_path, f'val_target_img-{image_id}.pkl')
+        elif blackhole_path == TEST_PROPOSALS:
+            proposal_pickle_path = os.path.join(blackhole_path, f'test_target_img-{image_id}.pkl')
+
         if not os.path.exists(proposal_pickle_path):
+            print(f"File not found: {proposal_pickle_path}")
             continue
 
-        # Load the proposals from the pickle file
         try:
             with open(proposal_pickle_path, 'rb') as f:
-                proposal_targets = pk.load(f)
-                
+                proposal_data = pk.load(f)
 
-            # Extract the coordinates from the proposals
+            # Handle the case where proposal_data is a tuple (None, proposals)
+            if isinstance(proposal_data, tuple) and len(proposal_data) >= 2:
+                proposal_targets = proposal_data[1]
+            else:
+                print(f"Unexpected data format in {proposal_pickle_path}")
+                continue
+
+            if not proposal_targets:
+                print(f"No proposals found for image {image_id}")
+                continue
+
             coords = []
             for target in proposal_targets:
+                if target is None:
+                    continue
                 try:
                     x_min = int(target['image_xmin'])
                     y_min = int(target['image_ymin'])
                     x_max = int(target['image_xmax'])
                     y_max = int(target['image_ymax'])
 
-                    # Ensure the coordinates are valid and append to the list
                     if x_max > x_min and y_max > y_min:
-                        #coords.append(torch.tensordict({
-                        #    'image_xmin': torch.tensor(x_min, dtype=torch.float32),
-                        #    'image_ymin': torch.tensor(y_min, dtype=torch.float32),
-                        #    'image_xmax': torch.tensor(x_max, dtype=torch.float32),
-                        #    'image_ymax': torch.tensor(y_max, dtype=torch.float32)
-                        #}))
                         coords.append((x_min, y_min, x_max, y_max))
-                except KeyError:
+                except KeyError as e:
+                    print(f"KeyError: {e} in target {target}")
                     continue
-            # Append the image path, proposal coordinates, and image ID
+
             if coords:
                 image_paths.append(image_path)
                 proposal_coords.append(coords)
                 image_ids.append(image_id)
-                
+            else:
+                print(f"No valid coordinates for image {image_id}")
+
         except Exception as e:
             print(f"Error loading proposals for image {image_id}: {e}")
-            
+
     return image_paths, proposal_coords, image_ids
 
-class Val_and_test_data(Dataset):
-#    def __init__(self, transform=None, folder_path='Potholes', 
-#                 method='quality', max_proposals=2000, blackhole_path='/dtu/blackhole/17/209207/val_proposals'):
 
-    def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', 
-                 method='quality', max_proposals=2000, blackhole_path='/dtu/blackhole/17/209207/val_proposals'):
+class Val_and_test_data(Dataset):
+    def __init__(self, transform=None, folder_path='Potholes', 
+                 method='quality', max_proposals=2000, blackhole_path=VAL_PROPOSALS):
         self.transform = transform
         self.method = method
         self.max_proposals = max_proposals
-        
-        # Ensure the dataset is accessed from the root of the repository 
+
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         entire_folder_path = os.path.join(base_path, folder_path)
-        
-        with open(os.path.join(entire_folder_path, "splits.json"), 'r') as file:
-            splits = json.load(file)
             
         if not os.path.exists(entire_folder_path):
             raise FileNotFoundError(f"Directory not found: {entire_folder_path}")
-# #TODO!: LINES 138  151 should be deleted!
-        # loading of the training split
-        train_files = splits['train']
-        random.seed(seed)
-        random.shuffle(train_files)
+
+        if blackhole_path == VAL_PROPOSALS:
+            pickled_files = glob.glob(os.path.join(blackhole_path, 'val_target_img-*.pkl'))
+            # Correctly extract the image ids from the pickled files 
+            files = [os.path.basename(file).replace('val_target_img-', '').replace('.pkl', '') for file in pickled_files]
+            
+        elif blackhole_path == TEST_PROPOSALS:
+            pickled_files = glob.glob(os.path.join(blackhole_path, 'test_target_img-*.pkl'))
+            # Correctly extract the image ids from the pickled files
+            files = [os.path.basename(file).replace('test_target_img-', '').replace('.pkl', '') for file in pickled_files]
+            
+
         
-        if split.lower() == 'val':
-            if val_percent is None:
-                raise ValueError('Validation percentage is not set')
-            val_count = int(len(sorted(glob.glob(os.path.join(entire_folder_path, "annotated-images/img-*.jpg")))) * val_percent / 100)
-            files = train_files[:val_count]
-        elif split.lower() == 'test':
-            files = splits['test']
-        else:
-            raise ValueError('Use either val or test to access data')
-#       
         self.image_paths, self.proposal_coords, self.image_ids = load_proposal_data(files, entire_folder_path, blackhole_path)
 
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        # Load the original image and its index and convert to RGB
         image_path = self.image_paths[idx]
         original_image = Image.open(image_path).convert('RGB')
         image_id = self.image_ids[idx]
-        # Load the proposal coordinates
         coords = self.proposal_coords[idx]
 
-        # List for storing the cropped proposal images    
         cropped_proposals_images = []
 
-        # Crop the proposals from the original image
         for coord in coords:
             x_min, y_min, x_max, y_max = coord
             proposal_image = original_image.crop((x_min, y_min, x_max, y_max))
 
-            # Apply the transform if available (e.g., convert to tensor, resize)
             if self.transform:
                 proposal_image = self.transform(proposal_image)
 
-            # Append the cropped proposal image
             cropped_proposals_images.append(proposal_image)
-
 
         return original_image, cropped_proposals_images, coords, image_id
 
@@ -484,12 +466,14 @@ def plot_original_and_crops(original_image, cropped_images, n=5):
     plt.show()
 if __name__ == "__main__":
 
+
+
     import time
     transform = transforms.Compose([
         transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
         transforms.ToTensor(),
     ])
-    val_dataset = Val_and_test_data(split='val', val_percent=20, transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
+    val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path=TEST_PROPOSALS)
     #val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
     print(f"Total images in dataset: {len(val_dataset)}")
 
@@ -543,7 +527,7 @@ if __name__ == "__main__":
     # Calculate elapsed time
     elapsed_time = end_time - start_time
     print(f"Total time to run the batch: {elapsed_time:.2f} seconds")
-
+#
 #val_loader = DataLoader(
 #    val_dataset,
 #    batch_size=4,

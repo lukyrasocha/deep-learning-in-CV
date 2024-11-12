@@ -4,7 +4,7 @@ import random
 import glob
 
 from PIL import Image
-from utils.load_data import get_xml_data, pickle_save, class_balance, pickle_save_for_test_and_val
+from utils.load_data import get_xml_data, pickle_save, class_balance
 from utils.selective_search import generate_proposals_and_targets_for_training, generate_proposals_for_test_and_val
 from torchvision import transforms
 from utils.logger import logger
