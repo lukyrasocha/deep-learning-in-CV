@@ -5,7 +5,7 @@ import numpy as np
 
 from PIL import Image
 from tensordict import TensorDict
-from metrics import IoU
+from utils.metrics import IoU
 from typing import Callable, Tuple, Dict, List, Optional, Any
 from torchvision import transforms
 

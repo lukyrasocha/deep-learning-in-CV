@@ -17,8 +17,8 @@ def ensure_dir(directory):
 if __name__ == '__main__':
 
     TRAIN_PROPOSALS = True 
-    VALIDATION_PROPOSALS = True
-    TEST_PROPOSALS = True 
+    VALIDATION_PROPOSALS = False
+    TEST_PROPOSALS = False  
 
 
     #The paths is relative to being in the poster-3-object-detection folder
