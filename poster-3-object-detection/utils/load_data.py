@@ -112,7 +112,8 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
                             'xmin': torch.tensor(x_min, dtype=torch.float32),
                             'ymin': torch.tensor(y_min, dtype=torch.float32),
                             'xmax': torch.tensor(x_max, dtype=torch.float32),
-                            'ymax': torch.tensor(y_max, dtype=torch.float32)
+                            'ymax': torch.tensor(y_max, dtype=torch.float32),
+                            'original_image_name' : image_id
                         }))
                 except KeyError as e:
                     print(f"KeyError: {e} in target {target}")
