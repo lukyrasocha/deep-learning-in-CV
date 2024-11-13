@@ -14,15 +14,21 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
-from utils.selective_search import generate_proposals_for_test_and_val
+from selective_search import generate_proposals_for_test_and_val
+from tensordict import TensorDict  
 
 
 # REPLACE BY YOUR OWN BLACKHOLE 
-TRAIN_IMAGE_DIR = '/dtu/blackhole/1b/209339/training_data/images/'
-TRAIN_TARGET_DIR = '/dtu/blackhole/1b/209339/training_data/targets/'
-VAL_PROPOSALS = '/dtu/blackhole/1b/209339/validation_data/targets/'
-TEST_PROPOSALS = '/dtu/blackhole/1b/209339/test_data/targets/'
-
+# MADS 
+# TRAIN_IMAGE_DIR = '/dtu/blackhole/1b/209339/training_data/images/'
+#TRAIN_TARGET_DIR = '/dtu/blackhole/1b/209339/training_data/targets/'
+#VAL_PROPOSALS = '/dtu/blackhole/1b/209339/validation_data/targets/'
+#TEST_PROPOSALS = '/dtu/blackhole/1b/209339/test_data/targets/'
+# PETR 
+TRAIN_IMAGE_DIR = '/dtu/blackhole/17/209207/training_data/images/'
+TRAIN_TARGET_DIR = '/dtu/blackhole/17/209207/training_data/targets/'
+VAL_PROPOSALS = '/dtu/blackhole/17/209207/validation_data/targets/'
+TEST_PROPOSALS = '/dtu/blackhole/17/209207/test_data/targets/'
 
 
 #Implement the one below
@@ -65,6 +71,7 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
         image_id = file  # Now 'image_id' is '12'
 
         image_path = os.path.join(entire_folder_path, "annotated-images", f"img-{image_id}.jpg")
+        annotated_xml_path = os.path.join(entire_folder_path, "annotations", f"img-{image_id}.xml")
         if blackhole_path == VAL_PROPOSALS:
             proposal_pickle_path = os.path.join(blackhole_path, f'val_target_img-{image_id}.pkl')
         elif blackhole_path == TEST_PROPOSALS:
@@ -100,7 +107,13 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
                     y_max = int(target['image_ymax'])
 
                     if x_max > x_min and y_max > y_min:
-                        coords.append((x_min, y_min, x_max, y_max))
+                        #coords.append((x_min, y_min, x_max, y_max))
+                        coords.append(TensorDict({
+                            'xmin': torch.tensor(x_min, dtype=torch.float32),
+                            'ymin': torch.tensor(y_min, dtype=torch.float32),
+                            'xmax': torch.tensor(x_max, dtype=torch.float32),
+                            'ymax': torch.tensor(y_max, dtype=torch.float32)
+                        }))
                 except KeyError as e:
                     print(f"KeyError: {e} in target {target}")
                     continue
@@ -157,7 +170,10 @@ class Val_and_test_data(Dataset):
         cropped_proposals_images = []
 
         for coord in coords:
-            x_min, y_min, x_max, y_max = coord
+            x_min = int(coord['xmin'])
+            y_min = int(coord['ymin'])
+            x_max = int(coord['xmax'])
+            y_max = int(coord['ymax'])
             proposal_image = original_image.crop((x_min, y_min, x_max, y_max))
 
             if self.transform:
@@ -396,6 +412,7 @@ if __name__ == "__main__":
         print(f"Number of images in batch: {len(original_images)}")
         print(f"Image IDs: {image_ids}")
         print("-" * 50)  # Separator between batches
+        print(coords_list[0])
 
         # Since batch_size=1, we'll work with the first (and only) item
         original_image = original_images[0]
@@ -404,6 +421,7 @@ if __name__ == "__main__":
         print(len(proposal_images))
         coords = coords_list[0]
         image_id = image_ids[0]
+        
 
         # Plot the original image and n cropped images
         plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
