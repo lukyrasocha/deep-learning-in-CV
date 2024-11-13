@@ -2,27 +2,53 @@ import os
 import json
 import random
 import glob
+import sys
 
 from PIL import Image
 from utils.load_data import get_xml_data, pickle_save, class_balance
-from utils.selective_search import generate_proposals_and_targets
+from utils.selective_search import generate_proposals_and_targets_for_training, generate_proposals_for_test_and_val
 from torchvision import transforms
-        
+from utils.logger import logger
+
+def ensure_dir(directory):
+    if not os.path.exists(directory):
+        print(f"Directiory {(directory)} does not exists, Creating directory: ", directory)
+        os.makedirs(directory)
 
 if __name__ == '__main__':
+
+    TRAIN_PROPOSALS = True 
+    VALIDATION_PROPOSALS = True
+    TEST_PROPOSALS = True 
+
+    blackhole_path = os.getenv('BLACKHOLE')
+    if not blackhole_path:
+        raise EnvironmentError("The $BLACKHOLE environment variable is not set or is empty.")
+
 
     #The paths is relative to being in the poster-3-object-detection folder
     get_images_from_folder_relative = 'Potholes/annotated-images'
     get_split_from_folder_relative = 'Potholes'
-    save_images_in_folder_relative = 'Potholes/training_data_images'
-    save_targets_in_folder_relative = 'Potholes/training_data_targets'
 
-    seed = 42
-    val_percent = 20
-    iou_upper_limit = 0.5
-    iou_lower_limit = 0.5
-    method = 'quality'
-    max_proposals = 2000
+    # save paths for training 
+    save_images_in_folder_relative = os.path.join(blackhole_path, 'DLCV/training_data/images')
+    save_targets_in_folder_relative = os.path.join(blackhole_path, 'DLCV/training_data/targets')
+
+    # save paths for validation
+    save_targets_in_folder_relative_val = os.path.join(blackhole_path, 'DLCV/validation_data/targets') #'Potholes/validation_data/targets'
+
+    # save paths for test
+    save_targets_in_folder_relative_test = os.path.join(blackhole_path, 'DLCV/test_data/targets') # 'Potholes/test_data/targets'
+
+
+
+    SEED = 42
+    VAL_PERCENT = 20 
+    IOU_UPPER_LIMIT = 0.5
+    IOU_LOWER_LIMIT = 0.5
+    METHOD = 'quality'
+    MAX_PROPOSALS = 2000
+
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
@@ -33,56 +59,132 @@ if __name__ == '__main__':
     get_images_from_folder_full = os.path.join(base_path, get_images_from_folder_relative)
     save_images_in_folder_full = os.path.join(base_path, save_images_in_folder_relative)
     save_targets_in_folder_full = os.path.join(base_path, save_targets_in_folder_relative)
+    save_targets_in_folder_full_val = os.path.join(base_path, save_targets_in_folder_relative_val)
+    save_targets_in_folder_full_test = os.path.join(base_path, save_targets_in_folder_relative_test)
 
-    # Check if the folder paths exists
-    if not os.path.exists(get_images_from_folder_full):
-        raise SystemExit(f"Error: Directory not found: {get_images_from_folder_full}")
-    elif not os.path.exists(save_images_in_folder_full):
-        raise SystemExit(f"Error: Directory not found: {save_images_in_folder_full}")
-    elif not os.path.exists(save_targets_in_folder_full):
-        raise SystemExit(f"Error: Directory not found: {save_targets_in_folder_full}")
+    # Ensure the directories exist
+    ensure_dir(get_images_from_folder_full)
+    ensure_dir(save_images_in_folder_full)
+    ensure_dir(save_targets_in_folder_full)
+    ensure_dir(save_targets_in_folder_full_val)
+    ensure_dir(save_targets_in_folder_full_test)
+    
 
 
-    # Load the splits from the JSON file
+#    # Load the splits from the JSON file
     json_path = os.path.join(get_split_from_folder_relative, "splits.json")
     with open(json_path, 'r') as file:
         splits = json.load(file)
     train_files = splits['train']
+    test_files = splits['test']
 
-    #If the validation percentage for the split is set, it will create a validation set based on the existing training set
-    if val_percent is not None:
-        random.seed(seed)
+#    #If the validation percentage for the split is set, it will create a validation set based on the existing training set
+    if VAL_PERCENT is not None:
+        random.seed(SEED)
         random.shuffle(train_files) 
-        #Get all the files to calculate the precentage for validation set
-        number_of_all_files = len(sorted(glob.glob(os.path.join(get_images_from_folder_full, 'img-*.jpg')))) #Get the number of all the files in the folder 
+        
+                #Get all the files to calculate the precentage for validation set
+                #number_of_all_files = len(sorted(glob.glob(os.path.join(get_images_from_folder_full, 'img-*.jpg')))) #Get the number of all the files in the folder 
 
         # Calculate the number of validation samples
-        val_count = int(number_of_all_files * val_percent/100)
+        val_count = int(len(train_files) * VAL_PERCENT/100)
         new_val_files = train_files[:val_count]
         new_train_files = train_files[val_count:]
-
+    else:
+        raise Exception("Validation percentage is not set")
+    
+    if TRAIN_PROPOSALS:
+        logger.working_on(f"Creating training proposals with and targets {len(new_train_files)} images")
         image_paths = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in new_train_files]
         xml_paths = [os.path.join(get_images_from_folder_full, file) for file in new_train_files]
-    else:
-        image_paths = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in train_files]
-        xml_paths = [os.path.join(get_images_from_folder_full, file) for file in train_files]
 
-    count = 0
-    for image_path, xml_path in zip(image_paths, xml_paths):
+        count = 0
+        for image_path, xml_path in zip(image_paths, xml_paths):
+            original_image = Image.open(image_path).convert('RGB')
+            original_targets = get_xml_data(xml_path)
+            image_id = os.path.splitext(os.path.basename(image_path))[0]
 
-        original_image = Image.open(image_path).convert('RGB')
-        original_targets = get_xml_data(xml_path)
-        # Get the image id for pickling ids
-        image_id = image_path.split('/')[-1].split('.')[0]
-        
-        # print out every 50th image id for tracking while running
-        if count % 50 == 0:
-            print(f"Image id {count}")
+            if count % 50 == 0:
+                print(f"Processing training image {count}: {image_id}")
+            # Generate proposals and targets
+            proposal_images, proposal_targets = generate_proposals_and_targets_for_training(
+                original_image, original_targets, transform, image_id,
+                IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
+                generate_target=True
+            )
+            # Perform class balancing
+            proposal_images_balanced, proposal_targets_balanced = class_balance(
+                proposal_images, proposal_targets, SEED, image_id
+            )
 
-        # Generate proposals and targets
-        proposal_images, proposal_targets = generate_proposals_and_targets(original_image, original_targets, transform, image_id, iou_upper_limit, iou_lower_limit, method, max_proposals, generate_target = True)
-        proposal_images_balanced, proposal_targets_balanced = class_balance(proposal_images, proposal_targets, seed, count)
+            if proposal_images_balanced is not None:
+                pickle_save(
+                    proposal_images_balanced, proposal_targets_balanced,
+                    save_images_in_folder_full, save_targets_in_folder_full,
+                    index=image_id, split='train'
+                )
+            count += 1
+        logger.success("Training proposals and targets created successfully")
 
-        if proposal_images_balanced is not None:
-            pickle_save(proposal_images_balanced, proposal_targets_balanced, save_images_in_folder_full, save_targets_in_folder_full, train=True, index=image_id)
-        count += 1
+    # Prepare paths for validation data
+    if VALIDATION_PROPOSALS and new_val_files:
+        logger.working_on(f"Creating validation proposals with {len(new_val_files)} images")
+        image_paths_val = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in new_val_files]
+        xml_paths_val = [os.path.join(get_images_from_folder_full, file) for file in new_val_files]
+
+        count = 0
+        for image_path, xml_path in zip(image_paths_val, xml_paths_val):
+            original_image = Image.open(image_path).convert('RGB')
+            original_targets = get_xml_data(xml_path)
+            image_id = os.path.splitext(os.path.basename(image_path))[0]
+
+            if count % 50 == 0:
+                print(f"Processing validation image {count}: {image_id}")
+
+            # Generate proposals
+            proposals = generate_proposals_for_test_and_val(
+                original_image, original_targets, transform, image_id,
+                IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
+                generate_target=False, return_images=False
+            )
+
+            if proposals is not None:
+                # Save the proposals and image_id
+                pickle_save(
+                    None, proposals,
+                    None, save_targets_in_folder_full_val,
+                    index=image_id, split='val'
+                )
+            count += 1
+        logger.success("Validation proposals created successfully")
+    # Prepare paths for test data
+    if TEST_PROPOSALS:
+        logger.working_on(f"Creating test proposals with {len(test_files)} images")
+        image_paths_test = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in test_files]
+        xml_paths_test = [os.path.join(get_images_from_folder_full, file) for file in test_files]
+
+        count = 0
+        for image_path, xml_path in zip(image_paths_test, xml_paths_test):
+            original_image = Image.open(image_path).convert('RGB')
+            original_targets = get_xml_data(xml_path)
+            image_id = os.path.splitext(os.path.basename(image_path))[0]
+
+            if count % 50 == 0:
+                print(f"Processing test image {count}: {image_id}")
+
+            # Generate proposals
+            proposals = generate_proposals_for_test_and_val(
+                original_image, original_targets, transform, image_id,
+                IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
+                generate_target=False, return_images=False
+            )
+
+            if proposals is not None:
+                # Save the proposals and image_id
+                pickle_save(
+                    None, proposals,
+                    None, save_targets_in_folder_full_test,
+                    index=image_id, split='test'
+                )
+            count += 1
+        logger.success("Test proposals created successfully")

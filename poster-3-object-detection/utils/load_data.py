@@ -6,150 +6,196 @@ import json
 import xml.etree.ElementTree as ET
 import random
 import pickle as pk
+import numpy as np
+import matplotlib.pyplot as plt
 
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
-from utils.selective_search import generate_proposals_and_targets
+from utils.selective_search import generate_proposals_for_test_and_val
 
-# Custom collate function for variable-sized inputs
-def collate_fn(batch):
-    images = [item[0] for item in batch]
-    targets = [item[1] for item in batch]
-    flat_images = [img for sublist in images for img in sublist]
-    flat_targets = [tgt for sublist in targets for tgt in sublist]
-    return torch.stack(flat_images), flat_targets
 
-class PotholeTrainDataset(Dataset):
-    def __init__(self, images_dir, targets_dir, transform=None, batch_size=32):
-        self.images_dir = images_dir
-        self.targets_dir = targets_dir
-        self.image_files = sorted(os.listdir(images_dir))
-        self.target_files = sorted(os.listdir(targets_dir))
-        self.transform = transform
-        self.batch_size = batch_size
+# REPLACE BY YOUR OWN BLACKHOLE 
+TRAIN_IMAGE_DIR = '/dtu/blackhole/1b/209339/training_data/images/'
+TRAIN_TARGET_DIR = '/dtu/blackhole/1b/209339/training_data/targets/'
+VAL_PROPOSALS = '/dtu/blackhole/1b/209339/validation_data/targets/'
+TEST_PROPOSALS = '/dtu/blackhole/1b/209339/test_data/targets/'
+
+
+
+#Implement the one below
+class Trainingset(Dataset):
+    def __init__(self, image_path, target_path):
+        self.image_path = image_path
+        self.target_path = target_path
+        
+        # Accessing from the root directory
+        self.image_path = glob.glob(os.path.join(self.image_path, '*.pkl'))
+        self.target_path = glob.glob(os.path.join(self.target_path, '*.pkl'))
+
+        assert len(self.image_path) == len(self.target_path), "The length of images and targets is not the same"
 
     def __len__(self):
-        return len(self.image_files)
+        return len(self.image_paths)
 
+    
     def __getitem__(self, idx):
-        with open(os.path.join(self.images_dir, self.image_files[idx]), 'rb') as img_f:
-            images = pk.load(img_f)
-        with open(os.path.join(self.targets_dir, self.target_files[idx]), 'rb') as tgt_f:
-            targets = pk.load(tgt_f)
-        
-        sample_indices = random.sample(range(len(images)), min(self.batch_size, len(images)))
-        sampled_images = [images[i] for i in sample_indices]
-        sampled_targets = [targets[i] for i in sample_indices]
-        
+        image_path = self.image_paths[idx]
+        original_image = Image.open(image_path).convert('RGB')
+
         if self.transform:
-            # Apply transform only if the image is not already a tensor
-            sampled_images = [self.transform(img) if not isinstance(img, torch.Tensor) else img for img in sampled_images]
-        
-        return sampled_images, sampled_targets
+            original_image = self.transform(original_image)
+
+        coords = self.proposal_coords[idx]
+
+        # Return the original image, proposal coordinates, and index
+        return original_image, coords, idx
+    
+
+    
+
+def load_proposal_data(files, entire_folder_path, blackhole_path):
+    image_paths = []
+    proposal_coords = []
+    image_ids = []
+
+    for file in files:
+        image_id = file  # Now 'image_id' is '12'
+
+        image_path = os.path.join(entire_folder_path, "annotated-images", f"img-{image_id}.jpg")
+        if blackhole_path == VAL_PROPOSALS:
+            proposal_pickle_path = os.path.join(blackhole_path, f'val_target_img-{image_id}.pkl')
+        elif blackhole_path == TEST_PROPOSALS:
+            proposal_pickle_path = os.path.join(blackhole_path, f'test_target_img-{image_id}.pkl')
+
+        if not os.path.exists(proposal_pickle_path):
+            print(f"File not found: {proposal_pickle_path}")
+            continue
+
+        try:
+            with open(proposal_pickle_path, 'rb') as f:
+                proposal_data = pk.load(f)
+
+            # Handle the case where proposal_data is a tuple (None, proposals)
+            if isinstance(proposal_data, tuple) and len(proposal_data) >= 2:
+                proposal_targets = proposal_data[1]
+            else:
+                print(f"Unexpected data format in {proposal_pickle_path}")
+                continue
+
+            if not proposal_targets:
+                print(f"No proposals found for image {image_id}")
+                continue
+
+            coords = []
+            for target in proposal_targets:
+                if target is None:
+                    continue
+                try:
+                    x_min = int(target['image_xmin'])
+                    y_min = int(target['image_ymin'])
+                    x_max = int(target['image_xmax'])
+                    y_max = int(target['image_ymax'])
+
+                    if x_max > x_min and y_max > y_min:
+                        coords.append((x_min, y_min, x_max, y_max))
+                except KeyError as e:
+                    print(f"KeyError: {e} in target {target}")
+                    continue
+
+            if coords:
+                image_paths.append(image_path)
+                proposal_coords.append(coords)
+                image_ids.append(image_id)
+            else:
+                print(f"No valid coordinates for image {image_id}")
+
+        except Exception as e:
+            print(f"Error loading proposals for image {image_id}: {e}")
+
+    return image_paths, proposal_coords, image_ids
 
 
 class Val_and_test_data(Dataset):
-    def __init__(self, split='val', val_percent=None, seed=42, transform=None, folder_path='Potholes', iou_upper_limit=0.5, iou_lower_limit=0.5, method='quality', max_proposals=int(2000)):
-        self.all_original_images = []
-        self.all_original_targets = []
+    def __init__(self, transform=None, folder_path='Potholes', 
+                 method='quality', max_proposals=2000, blackhole_path=VAL_PROPOSALS):
         self.transform = transform
-        self.iou_upper_limit = iou_upper_limit
-        self.iou_lower_limit = iou_lower_limit
         self.method = method
         self.max_proposals = max_proposals
 
-        # Ensure the dataset is accessed from the root of the repository
         base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         entire_folder_path = os.path.join(base_path, folder_path)
-
-        # Load the splits from the JSON file
-        json_path = os.path.join(entire_folder_path, "splits.json")
-        with open(json_path, 'r') as file:
-            splits = json.load(file)
-
+            
         if not os.path.exists(entire_folder_path):
             raise FileNotFoundError(f"Directory not found: {entire_folder_path}")
 
-        train_files = splits['train']
-        random.seed(seed)
-        random.shuffle(train_files)
+        if blackhole_path == VAL_PROPOSALS:
+            pickled_files = glob.glob(os.path.join(blackhole_path, 'val_target_img-*.pkl'))
+            # Correctly extract the image ids from the pickled files 
+            files = [os.path.basename(file).replace('val_target_img-', '').replace('.pkl', '') for file in pickled_files]
+            
+        elif blackhole_path == TEST_PROPOSALS:
+            pickled_files = glob.glob(os.path.join(blackhole_path, 'test_target_img-*.pkl'))
+            # Correctly extract the image ids from the pickled files
+            files = [os.path.basename(file).replace('test_target_img-', '').replace('.pkl', '') for file in pickled_files]
+            
 
-        if split.lower() == 'val':
-            if val_percent is not None:
-                number_of_all_files = len(sorted(glob.glob(os.path.join(entire_folder_path, "annotated-images/img-*.jpg"))))
-                val_count = int(number_of_all_files * val_percent / 100)
-                new_val_files = train_files[:val_count]
-                image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in new_val_files]
-                xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in new_val_files]
-            else:
-                raise ValueError('Validation percentage is not set')
-        elif split.lower() == 'test':
-            image_paths = [os.path.join(entire_folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['test']]
-            xml_paths = [os.path.join(entire_folder_path, "annotated-images", file) for file in splits['test']]
-        else:
-            raise ValueError('Use either val or test to access data')
-
-        assert len(image_paths) == len(xml_paths), "The length of images and xml files is not the same"
-
-        for image_path, xml_path in zip(image_paths, xml_paths):
-            original_image = Image.open(image_path).convert('RGB')
-            original_targets = get_xml_data(xml_path)
-            self.all_original_images.append(original_image)
-            self.all_original_targets.append(original_targets)
+        
+        self.image_paths, self.proposal_coords, self.image_ids = load_proposal_data(files, entire_folder_path, blackhole_path)
 
     def __len__(self):
-        return len(self.all_original_images)
+        return len(self.image_paths)
 
     def __getitem__(self, idx):
-        original_image = self.all_original_images[idx]
-        original_targets = self.all_original_targets[idx]
+        image_path = self.image_paths[idx]
+        original_image = Image.open(image_path).convert('RGB')
+        image_id = self.image_ids[idx]
+        coords = self.proposal_coords[idx]
 
-        # Generate proposals and targets on the fly
-        proposal_images, proposal_targets = generate_proposals_and_targets(
-            original_image, original_targets, self.transform, 
-            None, self.iou_upper_limit, self.iou_lower_limit, 
-            self.method, self.max_proposals, generate_target=False
-        )
+        cropped_proposals_images = []
 
-        original_image = self.transform(original_image)
+        for coord in coords:
+            x_min, y_min, x_max, y_max = coord
+            proposal_image = original_image.crop((x_min, y_min, x_max, y_max))
 
-        return original_image, original_targets, proposal_images, proposal_targets
+            if self.transform:
+                proposal_image = self.transform(proposal_image)
+
+            cropped_proposals_images.append(proposal_image)
+
+        return original_image, cropped_proposals_images, coords, image_id
 
 
-def val_test_collate_fn(batch):
+
+
+
+def val_test_collate_fn_cropped(batch):
     """
-    Custom collate function for a PyTorch DataLoader, used to process a batch of data 
-    where each sample contains an image and its corresponding targets.
-    It is needed because the deafult collate function expect dimensions of same size
-
-    Parameters:
-        batch (list of tuples): A list where each element is a tuple (image, target).
-            - image: A tensor representing the image.
-            - target: A list or dictionary containing the bounding box coordinates 
-                      and labels for objects detected in the image.
-
-    Returns:
-        tuple: A tuple containing:
-            - images (Tensor): A stacked tensor of images with shape 
-              (batch_size, channels, height, width), created using PyTorch's `default_collate`.
-            - targets (list): A list of original target annotations, one for each image.
+    Custom collate function to handle variable numbers of proposals per image.
     """
 
-    batch_original_images = []
-    batch_original_targets = []
     batch_proposal_images = []
-    batch_proposal_targets = []
+    batch_coords = []
+    batch_image_ids = []
 
-    for original_image, original_target, proposal_images, proposal_targets in batch:
-        batch_original_images.append(original_image)  # Append the image part to the images list
-        batch_original_targets.append(original_target)  # Append the target part to the targets list
-        batch_proposal_images.append(proposal_images)
-        batch_proposal_targets.extend(proposal_targets)
-    
-    return default_collate(batch_original_images), batch_original_targets, default_collate(batch_proposal_images), batch_proposal_targets  # Return stacked images and original targets
+    for proposal_images, coords, image_id in batch:
+        batch_proposal_images.extend(proposal_images)
+        batch_coords.extend(coords)
+        # List where the imamge id is repeated for each proposal image
+        # for example if there are 3 proposals for an image, the image id will be repeated 3 times
+        batch_image_ids.extend([image_id] * len(proposal_images))
+
+    # Stack the proposal images into a tensor to ensure the 
+    # [batch_size, 3, H, W] shape is maintained
+    if batch_proposal_images:  
+        batch_proposal_images = torch.stack(batch_proposal_images)
+    else:
+        batch_proposal_images = torch.Tensor()
+
+    return batch_proposal_images, batch_coords, batch_image_ids
+
 
 def get_xml_data(xml_path):
     tree = ET.parse(xml_path)
@@ -187,8 +233,8 @@ def get_xml_data(xml_path):
     
     return targets
 
-def pickle_save(final_image, final_target, save_images_path, save_targets_path, train, index):
-    if train:
+def pickle_save(final_image, final_target, save_images_path, save_targets_path, index, split='train' ):
+    if split == 'train':
         # Create the directory in the blackhole path if it doesn't exist
         os.makedirs(save_images_path, exist_ok=True)
         os.makedirs(save_targets_path, exist_ok=True)
@@ -198,6 +244,37 @@ def pickle_save(final_image, final_target, save_images_path, save_targets_path, 
             pk.dump(final_image, f)
         with open(os.path.join(save_targets_path, f'train_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
+
+    elif split == 'val':
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_targets_path, f'val_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+    elif split == 'test':
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_targets_path, f'test_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+
+def val_test_collate_fn_cropped(batch):
+    """
+    Custom collate function to handle variable numbers of proposals per image.
+    """
+    batch_original_images = []
+    batch_proposal_images = []
+    batch_coords = []
+    batch_image_ids = []
+
+    for original_image, proposal_images, coords, image_id in batch:
+        batch_original_images.append(original_image)
+        batch_proposal_images.append(proposal_images)
+        batch_coords.append(coords)
+        batch_image_ids.append(image_id)
+
+    return batch_original_images, batch_proposal_images, batch_coords, batch_image_ids
+
         
 def class_balance(proposal_images, proposal_targets, seed, count):
     # Initialize lists for the proposals and targets
@@ -248,48 +325,102 @@ def class_balance(proposal_images, proposal_targets, seed, count):
 
         return image_proposals, image_targets
     else:
+        print(f"No proposals and targets found for the image {image_id}")
         print(f"- Proposals generated in total: {len(proposal_images)}")
         print(f"- Class 0 proposals: {len(class_0_proposals)}")
         print(f"- Class 1 proposals: {len(class_1_proposals)}")
 
         return None, None
+    
+def plot_original_and_crops(original_image, cropped_images, n=5):
+    """
+    Plots the original image and n cropped images.
+    """
+    # Convert PIL image to numpy array for plotting
+    original_image_np = np.array(original_image)
 
+    # Determine the number of cropped images to display
+    n_crops = min(n, len(cropped_images))
+
+    # Create subplots
+    fig, axes = plt.subplots(1, n_crops + 1, figsize=(15, 5))
+
+    # Plot the original image
+    axes[0].imshow(original_image_np)
+    axes[0].set_title('Original Image')
+    axes[0].axis('off')
+
+    # Plot the cropped images
+    for i in range(n_crops):
+        crop_np = cropped_images[i].permute(1, 2, 0).numpy()  # Convert tensor to numpy array
+        # If the images were normalized during transform, you might need to unnormalize them
+        axes[i + 1].imshow(crop_np)
+        axes[i + 1].set_title(f'Crop {i + 1}')
+        axes[i + 1].axis('off')
+
+    plt.tight_layout()
+    plt.savefig('original_and_crops.svg', dpi=300)
+    plt.show()
 if __name__ == "__main__":
+
+
+
+    import time
     transform = transforms.Compose([
-        transforms.Resize((256, 256)),
+        transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
         transforms.ToTensor(),
     ])
+    val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path=TEST_PROPOSALS)
+    #val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
+    print(f"Total images in dataset: {len(val_dataset)}")
 
+    # Adjust batch_size to manage memory usage
+    batch_size = 1  # Since each image can have up to 2000 proposals
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=4,
+        collate_fn=val_test_collate_fn_cropped
+    )
 
-    ###############################################################
-    #The following code is use for the validation/test dataloader
-    ###############################################################
+    # Start timer
+    start_time = time.time()
 
-    #start_time = time.time()
-    #val = Val_and_test_data(split='test', val_percent=20, transform=transform, folder_path='Potholes')
-    #dataloader_val = DataLoader(val, batch_size = 8, shuffle=True, num_workers=8, collate_fn=val_test_collate_fn)
-    #end_time = time.time()
-    #
-    #print("Time taken to load one batch:", end_time - start_time, "seconds")
-    #count = 0
-    #print('check')
-#
-    #for batch_idx, (original_images, original_targets, proposal_images, proposal_targets) in enumerate(dataloader_val):
-#
-    #    print(f"\nBatch {batch_idx + 1}:")
-    #    print(f"Original Images: {len(original_images)}")
-    #    print(f"Original Targets: {len(original_targets)}")
-    #    print(f"Proposal Images: {len(proposal_images)}")
-    #    print(f"Proposal Targets: {len(proposal_targets)}")
-#
-    #    # Print details of the first image in the batch as an example
-    #    print("\nExample from the batch:")
-    #    print(f"Original Image Shape: {original_images[0].size}")
-    #    print(f"Original Target: {original_targets[0]}")
-    #    print(f"Number of Proposals: {len(proposal_images[0])}")
-    #    print(f"Proposal Target Example: {proposal_targets[0][:5]}")  # Print the first few proposals
-#
-    #    # Stop after printing one batch (remove this break to print all batches)
-    #    break
-#
-    #    #visualize_samples(dataloader, num_images=4, figname='pothole_samples', box_thickness=5)
+    # Number of cropped images to display
+    n_crops_to_display = 15  # You can set this to any number you like
+
+    # Process the validation set
+    for batch_idx, (original_images, proposal_images_list, coords_list, image_ids) in enumerate(val_loader):
+        print(f"\nBatch {batch_idx + 1}:")
+        print(f"Number of images in batch: {len(original_images)}")
+        print(f"Image IDs: {image_ids}")
+        print("-" * 50)  # Separator between batches
+
+        # Since batch_size=1, we'll work with the first (and only) item
+        original_image = original_images[0]
+        #print(len(original_image))
+        proposal_images = proposal_images_list[0]
+        print(len(proposal_images))
+        coords = coords_list[0]
+        image_id = image_ids[0]
+
+        # Plot the original image and n cropped images
+        plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
+
+        # If you wish to process the proposal_images through your model, you can stack them
+        proposal_images_tensor = torch.stack(proposal_images)  # Shape: [num_proposals, 3, H, W]
+        # outputs = model(proposal_images_tensor)
+
+        # For demonstration, let's just simulate processing time
+        time.sleep(0.1)  # Simulate computation
+        break
+        # Break after first batch for demonstration purposes
+        
+
+    # End timer
+    end_time = time.time()
+
+    # Calculate elapsed time
+    elapsed_time = end_time - start_time
+    print(f"Total time to run the batch: {elapsed_time:.2f} seconds")
