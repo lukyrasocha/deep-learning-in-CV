@@ -422,7 +422,7 @@ if __name__ == "__main__":
         ground_truth = ground_truths[0]  
 
         # Plot the original image and n cropped images
-        plot_original_and_crops(original_image, propo
+        plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
     # End timer
     end_time = time.time()
 
