@@ -17,10 +17,10 @@ def train_model(model, dataloader, criterion_cls, criterion_bbox, optimizer, num
                 t = targets[i]
                 
                 # Use scaled ground truth bounding box values
-                tx = (t['gt_bbox_xmin_scaled'] - t['image_xmin']) / (t['image_xmax'] - t['image_xmin'])
-                ty = (t['gt_bbox_ymin_scaled'] - t['image_ymin']) / (t['image_ymax'] - t['image_ymin'])
-                tw = torch.log((t['gt_bbox_xmax_scaled'] - t['gt_bbox_xmin_scaled']) / (t['image_xmax'] - t['image_xmin']))
-                th = torch.log((t['gt_bbox_ymax_scaled'] - t['gt_bbox_ymin_scaled']) / (t['image_ymax'] - t['image_ymin']))
+                tx = (t['gt_bbox_xmin'] - t['image_xmin']) / (t['image_xmax'] - t['image_xmin'])
+                ty = (t['gt_bbox_ymin'] - t['image_ymin']) / (t['image_ymax'] - t['image_ymin'])
+                tw = torch.log((t['gt_bbox_xmax'] - t['gt_bbox_xmin']) / (t['image_xmax'] - t['image_xmin']))
+                th = torch.log((t['gt_bbox_ymax'] - t['gt_bbox_ymin']) / (t['image_ymax'] - t['image_ymin']))
                 
                 fg_bbox_transforms.append(torch.tensor([tx, ty, tw, th]))
 

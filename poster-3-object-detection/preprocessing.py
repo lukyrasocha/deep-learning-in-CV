@@ -18,7 +18,7 @@ def ensure_dir(directory):
 
 if __name__ == '__main__':
 
-    TRAIN_PROPOSALS = False 
+    TRAIN_PROPOSALS = True
     VALIDATION_PROPOSALS = True
     TEST_PROPOSALS = True 
 

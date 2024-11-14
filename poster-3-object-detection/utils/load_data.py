@@ -13,8 +13,7 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from tensordict import TensorDict
-from torch.utils.data import default_collate
-from selective_search import generate_proposals_for_test_and_val
+from utils.selective_search import generate_proposals_for_test_and_val
 
 # REPLACE BY YOUR OWN BLACKHOLE 
 # MADS 
@@ -51,11 +50,11 @@ class Trainingset(Dataset):
         assert len(self.image_path) == len(self.target_path), "The length of images and targets is not the same"
 
     def __len__(self):
-        return len(self.image_paths)
+        return len(self.image_path)
 
     
     def __getitem__(self, idx):
-        image_path = self.image_paths[idx]
+        image_path = self.image_path[idx]
         original_image = Image.open(image_path).convert('RGB')
 
         if self.transform:

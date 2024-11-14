@@ -1,13 +1,17 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import os
+
 from torch.utils.data import DataLoader
 from torchvision import models, transforms
-
 from models.models import ResNetTwoHeads
 from models.train import train_model
-from utils.load_data import PotholeTrainDataset, collate_fn
+from utils.load_data import Trainingset
 
+blackhole_path = os.getenv('BLACKHOLE')
+if not blackhole_path:
+    raise EnvironmentError("The $BLACKHOLE environment variable is not set or is empty.")
 
 
 model = ResNetTwoHeads().cuda()
@@ -16,8 +20,10 @@ transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
-dataset = PotholeTrainDataset(images_dir='Potholes/training_data_images', targets_dir='Potholes/training_data_targets', transform=transform)
-dataloader = DataLoader(dataset, batch_size=1, shuffle=True, collate_fn=collate_fn, num_workers = 4)
+print(os.path.join(blackhole_path,'DLCV/Potholes/training_data_images'))
+
+dataset = Trainingset(image_path=os.path.join(blackhole_path,'DLCV/Potholes/training_data_images'), target_path=os.path.join(blackhole_path, 'DLCV/Potholes/training_data_targets'))
+dataloader = DataLoader(dataset, batch_size=1, shuffle=True, num_workers = 4)
 
 criterion_cls = nn.CrossEntropyLoss()
 criterion_bbox = nn.MSELoss()  # Mean Squared Error for (tx, ty, tw, th)

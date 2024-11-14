@@ -4,7 +4,7 @@ import numpy as np
 
 from PIL import Image
 from tensordict import TensorDict
-from metrics import IoU
+from utils.metrics import IoU
 from typing import Callable, Tuple, Dict, List, Optional, Any
 from torchvision import transforms
 
@@ -395,20 +395,11 @@ def apply_transformation_on_proposal_image_and_target(
     x_scale = new_width / original_width
     y_scale = new_height / original_height
 
-    if int(proposal_target['label']) == 1:
-        proposal_target.setdefault('x_scale', torch.tensor(float(x_scale))) 
-        proposal_target.setdefault('y_scale', torch.tensor(float(y_scale))) 
-        
-        # Scaling and translating the bounding box coordinates
-        gt_xmin_scaled = (gt_bbox['xmin'] - proposal_target['image_xmin'])  
-        gt_ymin_scaled = (gt_bbox['ymin'] - proposal_target['image_ymin']) 
-        gt_xmax_scaled = (gt_bbox['xmax'] - proposal_target['image_xmin']) * proposal_target['x_scale']
-        gt_ymax_scaled = (gt_bbox['ymax'] - proposal_target['image_ymin']) * proposal_target['y_scale']
-    
-        proposal_target.setdefault('gt_bbox_xmin_scaled', torch.tensor(float(gt_xmin_scaled)))
-        proposal_target.setdefault('gt_bbox_ymin_scaled', torch.tensor(float(gt_ymin_scaled)))
-        proposal_target.setdefault('gt_bbox_xmax_scaled', torch.tensor(float(gt_xmax_scaled)))
-        proposal_target.setdefault('gt_bbox_ymax_scaled', torch.tensor(float(gt_ymax_scaled)))
+    if int(proposal_target['label']) == 1: 
+        proposal_target.setdefault('gt_bbox_xmin', torch.tensor(float(gt_bbox['xmin'])))
+        proposal_target.setdefault('gt_bbox_ymin', torch.tensor(float(gt_bbox['ymin'])))
+        proposal_target.setdefault('gt_bbox_xmax', torch.tensor(float(gt_bbox['xmax'])))
+        proposal_target.setdefault('gt_bbox_ymax', torch.tensor(float(gt_bbox['ymax'])))
 
     return proposal_image_tensor, proposal_target
                 
