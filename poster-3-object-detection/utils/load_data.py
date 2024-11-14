@@ -420,9 +420,10 @@ if __name__ == "__main__":
         coords = coords_list[0]
         image_id = image_ids[0]
         ground_truth = ground_truths[0]  
+        break
 
         # Plot the original image and n cropped images
-        plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
+    plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
     # End timer
     end_time = time.time()
 
