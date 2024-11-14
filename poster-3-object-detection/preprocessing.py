@@ -36,7 +36,7 @@ if __name__ == '__main__':
     save_targets_in_folder_relative = os.path.join(blackhole_path, 'DLCV/training_data/targets')
 
     # save paths for validation
-    save_targets_in_folder_relative_val = os.path.join(blackhole_path, 'DLCV/validation_data/targets') #'Potholes/validation_data/targets'
+    save_targets_in_folder_relative_val = os.path.join(blackhole_path, 'DLCV/val_data/targets') #'Potholes/validation_data/targets'
 
     # save paths for test
     save_targets_in_folder_relative_test = os.path.join(blackhole_path, 'DLCV/test_data/targets') # 'Potholes/test_data/targets'
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     IOU_UPPER_LIMIT = 0.5
     IOU_LOWER_LIMIT = 0.5
     METHOD = 'quality'
-    MAX_PROPOSALS = 2000
+    MAX_PROPOSALS = 100
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
@@ -125,6 +125,9 @@ if __name__ == '__main__':
                     index=image_id, split='train'
                 )
             count += 1
+
+            if count == 10:
+                break
         logger.success("Training proposals and targets created successfully")
 
     if VALIDATION_PROPOSALS and new_val_files:
@@ -164,6 +167,9 @@ if __name__ == '__main__':
 
 
             count += 1
+
+            if count == 10:
+                break
         logger.success("Validation proposals and ground truth saved successfully")
     if TEST_PROPOSALS:
         logger.working_on(f"Creating test proposals with {len(test_files)} images")
@@ -199,4 +205,7 @@ if __name__ == '__main__':
                 save_ground_truth(ground_truth_path, original_targets)
 
             count += 1
+
+            if count == 10:
+                break
         logger.success("Test proposals and ground truth saved successfully")

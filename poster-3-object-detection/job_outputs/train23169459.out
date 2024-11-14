@@ -1,0 +1,64 @@
+🔧 WORKING ON: Loading Train data
+🔧 WORKING ON: Training model
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 23169459: <training> in cluster <dcc> Exited
+
+Job <training> was submitted from host <n-62-20-9> by user <s233498> in cluster <dcc> at Thu Nov 14 14:13:39 2024
+Job was executed on host(s) <4*n-62-18-8>, in queue <c02516>, as user <s233498> in cluster <dcc> at Thu Nov 14 14:13:40 2024
+</zhome/e3/f/203690> was used as the home directory.
+</dtu/blackhole/0a/203690/02516-intro-to-dl-in-cv/poster-3-object-detection> was used as the working directory.
+Started at Thu Nov 14 14:13:40 2024
+Terminated at Thu Nov 14 14:13:51 2024
+Results reported at Thu Nov 14 14:13:51 2024
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#BSUB -q c02516
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -J training
+#BSUB -n 4
+#BSUB -R "span[hosts=1]"
+#BSUB -R "rusage[mem=20GB]"
+#BSUB -W 01:00
+#BSUB -o job_outputs/train%J.out
+#BSUB -e job_outputs/train%J.err
+
+
+# Activate the conda environment (replace with the actual environment name)
+source /dtu/blackhole/0a/203690/miniconda3/bin/activate
+conda activate project-3
+
+
+# Run the Python script
+python main.py
+
+------------------------------------------------------------
+
+Exited with exit code 1.
+
+Resource usage summary:
+
+    CPU time :                                   13.45 sec.
+    Max Memory :                                 -
+    Average Memory :                             -
+    Total Requested Memory :                     81920.00 MB
+    Delta Memory :                               -
+    Max Swap :                                   -
+    Max Processes :                              -
+    Max Threads :                                -
+    Run time :                                   24 sec.
+    Turnaround time :                            12 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <job_outputs/train23169459.err> for stderr output of this job.
+
