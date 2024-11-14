@@ -126,8 +126,6 @@ if __name__ == '__main__':
                 )
             count += 1
 
-            if count == 10:
-                break
         logger.success("Training proposals and targets created successfully")
 
     if VALIDATION_PROPOSALS and new_val_files:
@@ -168,8 +166,6 @@ if __name__ == '__main__':
 
             count += 1
 
-            if count == 10:
-                break
         logger.success("Validation proposals and ground truth saved successfully")
     if TEST_PROPOSALS:
         logger.working_on(f"Creating test proposals with {len(test_files)} images")
@@ -206,6 +202,4 @@ if __name__ == '__main__':
 
             count += 1
 
-            if count == 10:
-                break
         logger.success("Test proposals and ground truth saved successfully")
