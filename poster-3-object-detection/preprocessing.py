@@ -1,11 +1,12 @@
 import os
 import json
+import pickle
 import random
 import glob
 import sys
 
 from PIL import Image
-from utils.load_data import get_xml_data, pickle_save, class_balance
+from utils.load_data import get_xml_data, pickle_save, class_balance, save_ground_truth
 from utils.selective_search import generate_proposals_and_targets_for_training, generate_proposals_for_test_and_val
 from torchvision import transforms
 from utils.logger import logger
@@ -17,7 +18,7 @@ def ensure_dir(directory):
 
 if __name__ == '__main__':
 
-    TRAIN_PROPOSALS = True 
+    TRAIN_PROPOSALS = False 
     VALIDATION_PROPOSALS = True
     TEST_PROPOSALS = True 
 
@@ -126,7 +127,6 @@ if __name__ == '__main__':
             count += 1
         logger.success("Training proposals and targets created successfully")
 
-    # Prepare paths for validation data
     if VALIDATION_PROPOSALS and new_val_files:
         logger.working_on(f"Creating validation proposals with {len(new_val_files)} images")
         image_paths_val = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in new_val_files]
@@ -145,7 +145,7 @@ if __name__ == '__main__':
             proposals = generate_proposals_for_test_and_val(
                 original_image, original_targets, transform, image_id,
                 IOU_UPPER_LIMIT, IOU_LOWER_LIMIT, METHOD, MAX_PROPOSALS,
-                generate_target=False, return_images=False
+                generate_target=True, return_images=False
             )
 
             if proposals is not None:
@@ -155,9 +155,16 @@ if __name__ == '__main__':
                     None, save_targets_in_folder_full_val,
                     index=image_id, split='val'
                 )
+
+                ground_truth_path = os.path.join(save_targets_in_folder_full_val, f"{image_id}_gt.pkl")
+                save_ground_truth(ground_truth_path, original_targets)
+
+                # Save the ground truth (original_targets)
+                ground_truth_path = os.path.join(save_targets_in_folder_full_val, f"{image_id}_gt.pkl")
+
+
             count += 1
-        logger.success("Validation proposals created successfully")
-    # Prepare paths for test data
+        logger.success("Validation proposals and ground truth saved successfully")
     if TEST_PROPOSALS:
         logger.working_on(f"Creating test proposals with {len(test_files)} images")
         image_paths_test = [os.path.join(get_images_from_folder_full, file.replace('.xml', '.jpg')) for file in test_files]
@@ -186,5 +193,10 @@ if __name__ == '__main__':
                     None, save_targets_in_folder_full_test,
                     index=image_id, split='test'
                 )
+
+                # Save the ground truth (original_targets)
+                ground_truth_path = os.path.join(save_targets_in_folder_full_test, f"{image_id}_gt.pkl")
+                save_ground_truth(ground_truth_path, original_targets)
+
             count += 1
-        logger.success("Test proposals created successfully")
+        logger.success("Test proposals and ground truth saved successfully")

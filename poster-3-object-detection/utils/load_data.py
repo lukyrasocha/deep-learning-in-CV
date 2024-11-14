@@ -15,8 +15,6 @@ from torchvision import transforms
 from tensordict import TensorDict
 from torch.utils.data import default_collate
 from selective_search import generate_proposals_for_test_and_val
-from tensordict import TensorDict  
-
 
 # REPLACE BY YOUR OWN BLACKHOLE 
 # MADS 
@@ -27,11 +25,20 @@ from tensordict import TensorDict
 # PETR 
 TRAIN_IMAGE_DIR = '/dtu/blackhole/17/209207/training_data/images/'
 TRAIN_TARGET_DIR = '/dtu/blackhole/17/209207/training_data/targets/'
-VAL_PROPOSALS = '/dtu/blackhole/17/209207/validation_data/targets/'
+VAL_PROPOSALS = '/dtu/blackhole/17/209207/DLCV/validation_data/targets'
 TEST_PROPOSALS = '/dtu/blackhole/17/209207/test_data/targets/'
+# LUKAS
+# TRAIN_IMAGE_DIR = ''
+# TRAIN_TARGET_DIR = ''
+# VAL_PROPOSALS = ''
+# TEST_PROPOSALS = ''
 
+# JONE
+# TRAIN_IMAGE_DIR = ''
+# TRAIN_TARGET_DIR = ''
+# VAL_PROPOSALS = ''
+# TEST_PROPOSALS = ''
 
-#Implement the one below
 class Trainingset(Dataset):
     def __init__(self, image_path, target_path):
         self.image_path = image_path
@@ -56,36 +63,42 @@ class Trainingset(Dataset):
 
         coords = self.proposal_coords[idx]
 
-        # Return the original image, proposal coordinates, and index
         return original_image, coords, idx
     
-
-    
-
+        
 def load_proposal_data(files, entire_folder_path, blackhole_path):
     image_paths = []
     proposal_coords = []
     image_ids = []
+    ground_truths = [] 
 
     for file in files:
-        image_id = file  # Now 'image_id' is '12'
+        image_id = file 
 
         image_path = os.path.join(entire_folder_path, "annotated-images", f"img-{image_id}.jpg")
-        annotated_xml_path = os.path.join(entire_folder_path, "annotations", f"img-{image_id}.xml")
+        
+        # Determine the path for proposals and ground truths
         if blackhole_path == VAL_PROPOSALS:
             proposal_pickle_path = os.path.join(blackhole_path, f'val_target_img-{image_id}.pkl')
+            ground_truth_path = os.path.join(blackhole_path, f'img-{image_id}_gt.pkl') 
         elif blackhole_path == TEST_PROPOSALS:
             proposal_pickle_path = os.path.join(blackhole_path, f'test_target_img-{image_id}.pkl')
+            ground_truth_path = os.path.join(blackhole_path, f'img-{image_id}_gt.pkl') 
 
         if not os.path.exists(proposal_pickle_path):
             print(f"File not found: {proposal_pickle_path}")
             continue
 
+        if not os.path.exists(ground_truth_path):
+            print(f"Ground truth file not found: {ground_truth_path}")
+            continue
+
         try:
+            # Load proposals
             with open(proposal_pickle_path, 'rb') as f:
                 proposal_data = pk.load(f)
 
-            # Handle the case where proposal_data is a tuple (None, proposals)
+            # Handle the case where proposal_data is a tuple (None, proposals) (because of the way proposals are saved)
             if isinstance(proposal_data, tuple) and len(proposal_data) >= 2:
                 proposal_targets = proposal_data[1]
             else:
@@ -95,6 +108,10 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
             if not proposal_targets:
                 print(f"No proposals found for image {image_id}")
                 continue
+
+            # Load ground truth data
+            with open(ground_truth_path, 'rb') as f:
+                ground_truth = pk.load(f)
 
             coords = []
             for target in proposal_targets:
@@ -107,13 +124,12 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
                     y_max = int(target['image_ymax'])
 
                     if x_max > x_min and y_max > y_min:
-                        #coords.append((x_min, y_min, x_max, y_max))
                         coords.append(TensorDict({
                             'xmin': torch.tensor(x_min, dtype=torch.float32),
                             'ymin': torch.tensor(y_min, dtype=torch.float32),
                             'xmax': torch.tensor(x_max, dtype=torch.float32),
                             'ymax': torch.tensor(y_max, dtype=torch.float32),
-                            'original_image_name' : image_id
+                            'original_image_name': image_id
                         }))
                 except KeyError as e:
                     print(f"KeyError: {e} in target {target}")
@@ -123,14 +139,14 @@ def load_proposal_data(files, entire_folder_path, blackhole_path):
                 image_paths.append(image_path)
                 proposal_coords.append(coords)
                 image_ids.append(image_id)
+                ground_truths.append(ground_truth) 
             else:
                 print(f"No valid coordinates for image {image_id}")
 
         except Exception as e:
             print(f"Error loading proposals for image {image_id}: {e}")
 
-    return image_paths, proposal_coords, image_ids
-
+    return image_paths, proposal_coords, image_ids, ground_truths 
 
 class Val_and_test_data(Dataset):
     def __init__(self, transform=None, folder_path='Potholes', 
@@ -156,17 +172,22 @@ class Val_and_test_data(Dataset):
             files = [os.path.basename(file).replace('test_target_img-', '').replace('.pkl', '') for file in pickled_files]
             
 
-        
-        self.image_paths, self.proposal_coords, self.image_ids = load_proposal_data(files, entire_folder_path, blackhole_path)
+        self.image_paths, self.proposal_coords, self.image_ids, self.ground_truths = load_proposal_data(
+            files, entire_folder_path, blackhole_path
+        )
 
     def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
         image_path = self.image_paths[idx]
-        original_image = Image.open(image_path).convert('RGB')
+        #original_image = Image.open(image_path).convert('RGB')
         image_id = self.image_ids[idx]
         coords = self.proposal_coords[idx]
+        ground_truth = self.ground_truths[idx]  
+
+        with Image.open(image_path) as img:
+            original_image = img.convert('RGB')
 
         cropped_proposals_images = []
 
@@ -182,39 +203,31 @@ class Val_and_test_data(Dataset):
 
             cropped_proposals_images.append(proposal_image)
 
-        return original_image, cropped_proposals_images, coords, image_id
-
-
-
-
+        return original_image, cropped_proposals_images, coords, image_id, ground_truth
 
 def val_test_collate_fn_cropped(batch):
     """
-    Custom collate function to handle variable numbers of proposals per image.
+    Custom collate function to handle variable numbers of proposals per image
+    and include ground truth data.
     """
-
+    batch_original_images = []
     batch_proposal_images = []
     batch_coords = []
     batch_image_ids = []
+    batch_ground_truths = []
 
-    for proposal_images, coords, image_id in batch:
-        batch_proposal_images.extend(proposal_images)
-        batch_coords.extend(coords)
-        # List where the imamge id is repeated for each proposal image
-        # for example if there are 3 proposals for an image, the image id will be repeated 3 times
-        batch_image_ids.extend([image_id] * len(proposal_images))
+    for original_image, proposal_images, coords, image_id, ground_truth in batch:
+        batch_original_images.append(original_image)
+        batch_proposal_images.append(proposal_images)
+        batch_coords.append(coords)
+        batch_image_ids.append(image_id)
+        batch_ground_truths.append(ground_truth)
 
-    # Stack the proposal images into a tensor to ensure the 
-    # [batch_size, 3, H, W] shape is maintained
-    if batch_proposal_images:  
-        batch_proposal_images = torch.stack(batch_proposal_images)
-    else:
-        batch_proposal_images = torch.Tensor()
-
-    return batch_proposal_images, batch_coords, batch_image_ids
-
+    return batch_original_images, batch_proposal_images, batch_coords, batch_image_ids, batch_ground_truths
+  
 
 def get_xml_data(xml_path):
+    
     tree = ET.parse(xml_path)
     root = tree.getroot()
 
@@ -224,7 +237,7 @@ def get_xml_data(xml_path):
     # Iterate through each object in the XML file
     for obj in root.findall('object'):
     
-        #If the box is a pothole the label is 1 (True)
+        # If the box is a pothole the label is 1 (True)
         if obj.find('name').text == 'pothole':
             label = 1
         else:
@@ -237,7 +250,7 @@ def get_xml_data(xml_path):
         xmax = int(bndbox.find('xmax').text)
         ymax = int(bndbox.find('ymax').text)
 
-        # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
+        # Append bounding box and label. TensorDict is used to convert the dictionary to a tensor
         directory = TensorDict({
             'xmin'  : torch.tensor(xmin, dtype=torch.float32),
             'ymin'  : torch.tensor(ymin, dtype=torch.float32),
@@ -249,7 +262,7 @@ def get_xml_data(xml_path):
         targets.append(directory)
     
     return targets
-
+    
 def pickle_save(final_image, final_target, save_images_path, save_targets_path, index, split='train' ):
     if split == 'train':
         # Create the directory in the blackhole path if it doesn't exist
@@ -275,24 +288,7 @@ def pickle_save(final_image, final_target, save_images_path, save_targets_path, 
         with open(os.path.join(save_targets_path, f'test_target_{index}.pkl'), 'wb') as f:
             pk.dump(final_target, f)
 
-def val_test_collate_fn_cropped(batch):
-    """
-    Custom collate function to handle variable numbers of proposals per image.
-    """
-    batch_original_images = []
-    batch_proposal_images = []
-    batch_coords = []
-    batch_image_ids = []
 
-    for original_image, proposal_images, coords, image_id in batch:
-        batch_original_images.append(original_image)
-        batch_proposal_images.append(proposal_images)
-        batch_coords.append(coords)
-        batch_image_ids.append(image_id)
-
-    return batch_original_images, batch_proposal_images, batch_coords, batch_image_ids
-
-        
 def class_balance(proposal_images, proposal_targets, seed, count):
     # Initialize lists for the proposals and targets
     class_1_proposals = []
@@ -302,9 +298,8 @@ def class_balance(proposal_images, proposal_targets, seed, count):
     
     random.seed(seed)
     # Loop through each proposal and target
-    for image, target, in zip(proposal_images, proposal_targets):
-        if int(target['label']) == 1:
-            # print if label is 1 missing and write the image id
+    for image, target in zip(proposal_images, proposal_targets):
+        if int(target['label']) == 1:  # Assuming 'labels' is the correct key
             class_1_proposals.append(image)
             class_1_targets.append(target)
         else:
@@ -328,7 +323,8 @@ def class_balance(proposal_images, proposal_targets, seed, count):
         class_0_targets_new = class_0_targets
         
     # sanity check that the ideal and the new class 0 proposals are the same
-    assert len(class_0_proposals_new) == total_class_0_ideal
+    assert len(class_0_proposals_new) == total_class_0_ideal, \
+        f"Expected {total_class_0_ideal} class 0 proposals, but got {len(class_0_proposals_new)}"
 
     # Combine the class 0 and class 1 proposals
     image_proposals = class_0_proposals_new + class_1_proposals
@@ -342,13 +338,17 @@ def class_balance(proposal_images, proposal_targets, seed, count):
 
         return image_proposals, image_targets
     else:
-        print(f"No proposals and targets found for the image {image_id}")
+        print(f"No proposals and targets found for the image")
         print(f"- Proposals generated in total: {len(proposal_images)}")
         print(f"- Class 0 proposals: {len(class_0_proposals)}")
         print(f"- Class 1 proposals: {len(class_1_proposals)}")
 
         return None, None
     
+def save_ground_truth(ground_truth_path, original_targets):
+    with open(ground_truth_path, 'wb') as f:
+        pk.dump(original_targets, f)
+
 def plot_original_and_crops(original_image, cropped_images, n=5):
     """
     Plots the original image and n cropped images.
@@ -378,16 +378,14 @@ def plot_original_and_crops(original_image, cropped_images, n=5):
     plt.tight_layout()
     plt.savefig('original_and_crops.svg', dpi=300)
     plt.show()
+
 if __name__ == "__main__":
-
-
-
     import time
     transform = transforms.Compose([
         transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
         transforms.ToTensor(),
     ])
-    val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path=TEST_PROPOSALS)
+    val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path=VAL_PROPOSALS)
     #val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
     print(f"Total images in dataset: {len(val_dataset)}")
 
@@ -408,35 +406,23 @@ if __name__ == "__main__":
     n_crops_to_display = 15  # You can set this to any number you like
 
     # Process the validation set
-    for batch_idx, (original_images, proposal_images_list, coords_list, image_ids) in enumerate(val_loader):
+    for batch_idx, (original_images, proposal_images_list, coords_list, image_ids, ground_truths) in enumerate(val_loader):
         print(f"\nBatch {batch_idx + 1}:")
         print(f"Number of images in batch: {len(original_images)}")
         print(f"Image IDs: {image_ids}")
-        print("-" * 50)  # Separator between batches
-        print(coords_list[0])
+        print("-" * 50)  
+        print(coords_list)
+        print(f"Ground Truths: {ground_truths}")  
 
-        # Since batch_size=1, we'll work with the first (and only) item
         original_image = original_images[0]
-        #print(len(original_image))
         proposal_images = proposal_images_list[0]
-        print(len(proposal_images))
+        print(f"Number of proposals: {len(proposal_images)}")
         coords = coords_list[0]
         image_id = image_ids[0]
-        
+        ground_truth = ground_truths[0]  
 
         # Plot the original image and n cropped images
-        plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
-
-        # If you wish to process the proposal_images through your model, you can stack them
-        proposal_images_tensor = torch.stack(proposal_images)  # Shape: [num_proposals, 3, H, W]
-        # outputs = model(proposal_images_tensor)
-
-        # For demonstration, let's just simulate processing time
-        time.sleep(0.1)  # Simulate computation
-        break
-        # Break after first batch for demonstration purposes
-        
-
+        plot_original_and_crops(original_image, propo
     # End timer
     end_time = time.time()
 
