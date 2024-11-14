@@ -349,77 +349,135 @@ def save_ground_truth(ground_truth_path, original_targets):
     with open(ground_truth_path, 'wb') as f:
         pk.dump(original_targets, f)
 
-def plot_original_and_crops(original_image, cropped_images, n=5):
-    """
-    Plots the original image and n cropped images.
-    """
-    # Convert PIL image to numpy array for plotting
-    original_image_np = np.array(original_image)
+import matplotlib.patches as patches
 
+def plot_original_and_crops(original_image, ground_truth, cropped_images, n=5):
+    """
+    Plots the original image with ground truth bounding boxes and n cropped images.
+    
+    Parameters:
+    - original_image: PIL.Image.Image, the original image.
+    - ground_truth: list of TensorDicts, each containing 'xmin', 'ymin', 'xmax', 'ymax', and optionally 'labels'.
+    - cropped_images: list of transformed proposal images (torch.Tensor).
+    - n: int, number of cropped images to display.
+    """
+    # Convert PIL image to NumPy array for plotting
+    original_image_np = np.array(original_image)
+    
     # Determine the number of cropped images to display
     n_crops = min(n, len(cropped_images))
-
-    # Create subplots
-    fig, axes = plt.subplots(1, n_crops + 1, figsize=(15, 5))
-
+    
+    # Create subplots: 1 for original image with ground truth, and n for cropped images
+    fig, axes = plt.subplots(1, n + 1, figsize=(15, 5))
+    
     # Plot the original image
     axes[0].imshow(original_image_np)
-    axes[0].set_title('Original Image')
+    axes[0].set_title('Original Image with Ground Truth')
     axes[0].axis('off')
-
+    
+    # Overlay ground truth bounding boxes
+    ax = axes[0]
+    for gt in ground_truth:
+        try:
+            xmin = gt['xmin'].item()
+            ymin = gt['ymin'].item()
+            xmax = gt['xmax'].item()
+            ymax = gt['ymax'].item()
+            label = gt['labels'].item() if 'labels' in gt.keys() else None
+            
+            # Create a Rectangle patch
+            rect = patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
+                                     linewidth=2, edgecolor='r', facecolor='none')
+            # Add the patch to the Axes
+            ax.add_patch(rect)
+            
+            # Optionally, add labels
+            #if label is not None:
+            #    ax.text(xmin, ymin - 5, f'Label: {label}', 
+            #            color='yellow', fontsize=8, 
+            #            bbox=dict(facecolor='red', alpha=0.5))
+        except Exception as e:
+            print(f"Error plotting ground truth box: {e}")
+    
     # Plot the cropped images
     for i in range(n_crops):
-        crop_np = cropped_images[i].permute(1, 2, 0).numpy()  # Convert tensor to numpy array
-        # If the images were normalized during transform, you might need to unnormalize them
-        axes[i + 1].imshow(crop_np)
-        axes[i + 1].set_title(f'Crop {i + 1}')
-        axes[i + 1].axis('off')
-
+        crop = cropped_images[i]
+        if isinstance(crop, torch.Tensor):
+            # Convert tensor to NumPy array
+            crop_np = crop.permute(1, 2, 0).numpy()
+            # Handle normalization if applied
+            # Example: If normalized with mean and std, you might need to unnormalize
+            # Assuming no normalization for simplicity
+            axes[i + 1].imshow(crop_np)
+            axes[i + 1].set_title(f'Crop {i + 1}')
+            axes[i + 1].axis('off')
+        else:
+            print(f"Crop {i + 1} is not a tensor.")
+    
     plt.tight_layout()
-    plt.savefig('original_and_crops.svg', dpi=300)
+    plt.savefig('original_ground_truth_and_crops.svg', dpi=300)
     plt.show()
+
+
 
 if __name__ == "__main__":
     import time
+    from torchvision import transforms
+
+    # Define transformations
     transform = transforms.Compose([
         transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
         transforms.ToTensor(),
     ])
-    val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path=VAL_PROPOSALS)
-    #val_dataset = Val_and_test_data(transform=transform, folder_path='Potholes', blackhole_path='/dtu/blackhole/17/209207/val_proposals')
+
+    # Initialize the validation dataset
+    val_dataset = Val_and_test_data(
+        transform=transform, 
+        folder_path='Potholes', 
+        blackhole_path=VAL_PROPOSALS
+    )
+    
     print(f"Total images in dataset: {len(val_dataset)}")
 
-    # Adjust batch_size to manage memory usage
+    # Set batch size
     batch_size = 1  # Since each image can have up to 2000 proposals
+    
+    # Initialize DataLoader
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
         shuffle=True,
-        collate_fn=val_test_collate_fn_cropped, 
+        collate_fn=val_test_collate_fn_cropped
     )
 
     # Start timer
     start_time = time.time()
 
     # Number of cropped images to display
-    n_crops_to_display = 15  # You can set this to any number you like
+    n_crops_to_display = 5  # Adjust as needed
 
-    # Process the validation set
-    for batch_idx, (original_images, proposal_images_list, coords_list, image_ids, ground_truths) in enumerate(val_loader):
-        print(f"\nBatch {batch_idx + 1}:")
-        print(f"Number of images in batch: {len(original_images)}")
+    try:
+        # Retrieve one batch
+        batch = next(iter(val_loader))
+        original_images, proposal_images_list, coords_list, image_ids, ground_truths = batch
+
+        print(f"\nBatch contents:")
+        print(f"Number of images: {len(original_images)}")
         print(f"Image IDs: {image_ids}")
-        print("-" * 50)  # Separator between batches
-        print(coords_list)
-        print(f"Ground Truths: {ground_truths}")  # Print ground truths
+        print(f"Number of proposals: {[len(proposals) for proposals in proposal_images_list]}")
+        print(f"Number of ground truths: {len(ground_truths)}")
+        print("-" * 50)
 
-        # Since batch_size=1
-        #original_image = original_images[0]
-        #proposal_images = proposal_images_list[0]
-        #print(f"Number of proposals: {len(proposal_images)}")
-        #coords = coords_list[0]
-        #image_id = image_ids[0]
-        #ground_truth = ground_truths[0]  # Retrieve ground truth
+        # Plot the first image in the batch
+        plot_original_and_crops(
+            original_images[0], 
+            ground_truths[0], 
+            proposal_images_list[0], 
+            n=n_crops_to_display
+        )
+
+    except Exception as e:
+        print(f"An error occurred during processing: {e}")
 
     # End timer
     end_time = time.time()
