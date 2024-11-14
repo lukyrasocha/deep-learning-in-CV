@@ -395,8 +395,7 @@ if __name__ == "__main__":
         val_dataset,
         batch_size=batch_size,
         shuffle=True,
-        num_workers=4,
-        collate_fn=val_test_collate_fn_cropped
+        collate_fn=val_test_collate_fn_cropped, 
     )
 
     # Start timer
@@ -410,20 +409,18 @@ if __name__ == "__main__":
         print(f"\nBatch {batch_idx + 1}:")
         print(f"Number of images in batch: {len(original_images)}")
         print(f"Image IDs: {image_ids}")
-        print("-" * 50)  
+        print("-" * 50)  # Separator between batches
         print(coords_list)
-        print(f"Ground Truths: {ground_truths}")  
+        print(f"Ground Truths: {ground_truths}")  # Print ground truths
 
-        original_image = original_images[0]
-        proposal_images = proposal_images_list[0]
-        print(f"Number of proposals: {len(proposal_images)}")
-        coords = coords_list[0]
-        image_id = image_ids[0]
-        ground_truth = ground_truths[0]  
-        break
+        # Since batch_size=1
+        #original_image = original_images[0]
+        #proposal_images = proposal_images_list[0]
+        #print(f"Number of proposals: {len(proposal_images)}")
+        #coords = coords_list[0]
+        #image_id = image_ids[0]
+        #ground_truth = ground_truths[0]  # Retrieve ground truth
 
-        # Plot the original image and n cropped images
-    plot_original_and_crops(original_image, proposal_images, n=n_crops_to_display)
     # End timer
     end_time = time.time()
 
