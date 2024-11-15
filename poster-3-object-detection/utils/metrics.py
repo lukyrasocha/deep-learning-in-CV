@@ -1,5 +1,5 @@
 from typing import Dict, List
-
+import numpy as np
 def IoU(
     box1_xmin: float,
     box1_ymin: float,
@@ -190,6 +190,144 @@ def non_max_suppression(
     return bboxes_after_nms
 
 
+def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
+    """
+    Calculate precision, recall, and mean average precision (mAP) for object detection.
+
+    Parameters:
+    -----------
+    ground_truths : List[List[Dict]]
+        A list of lists containing ground truth bounding box dictionaries for each image.
+
+    predictions : List[List[Dict]]
+        A list of lists containing predicted bounding box dictionaries for each image.
+
+    iou_threshold : float
+        The IoU threshold to consider a prediction as a true positive.
+
+    Returns:
+    --------
+    np.ndarray
+        A numpy array with columns [precision, recall].
+
+    float
+        The mean average precision (mAP) calculated without interpolation.
+    """
+
+    TP = []
+    FP = []
+    matches = []
+    pre_prob = []
+    
+    # Get ground truth and predictions for one image
+    for pred_boxes in predictions:
+        for gt_boxes in ground_truths:
+            # Sort the predictions so we are looking on the boxes with the highest probability
+            pred_boxes = sorted(pred_boxes, key=lambda x: x['pre_class'], reverse=True)
+
+            # Create an set, to ensure that we are not going to match multiple prediction with the same ground truth box
+            gt_matched = set()
+
+            for i, pred_box in enumerate(pred_boxes):
+                print(pred_box)
+                # This below is used to keep track of the highest IoU for a prediction. We use j as the index for the ground truth 
+                best_iou = 0.0
+                best_gt_idx = -1
+                for j, gt_box in enumerate(gt_boxes):
+
+                    #If we don't have the ground truth in our set we will calculate the IoU
+                    if j not in gt_matched:
+                        iou = IoU(pred_box["pre_bbox_xmin"], pred_box["pre_bbox_ymin"],
+                            pred_box["pre_bbox_xmax"], pred_box["pre_bbox_ymax"], 
+                            gt_box["xmin"], gt_box["ymin"],
+                            gt_box["xmax"], gt_box["ymax"]
+                        )
+
+                        # If it is above the best IoU, we will remember it
+                        if iou > best_iou:
+                            best_iou = iou
+                            best_gt_idx = j
+
+                # Append the predicted probability so we can use it to sort when calculation the mAP
+                pre_prob.append(pred_box['pre_class'])
+                # Check if the best IoU is above a certain threshold. If it is, we will append 1 to TP and 0 to FP
+                if best_iou >= iou_threshold:
+                    TP.append(1)
+                    FP.append(0)
+                    matches.append(1)
+                else:
+                    TP.append(0)
+                    FP.append(1)
+
+    # Convert the list into numpy, so we can sort based on the highest probability             
+    TP = np.array(TP)
+    FP = np.array(FP)
+    pre_prob = np.array(pre_prob)
+
+    # Get the sorted indices based on pre_prob in descending order
+    sorted_indices = np.argsort(pre_prob)[::-1] # argsort return for lowest to highest but since we want it reverse we use the slicing syntax
+
+    # Sort TP, FP, and pre_prob based on these indices
+    TP_sorted = TP[sorted_indices]
+    FP_sorted = FP[sorted_indices]
+    pre_prob_sorted = pre_prob[sorted_indices]
+
+    # Calculate the precision and recall
+
+    precision_values = []
+    recall_values = []
+
+    cumulative_TP = 0 
+    cumulative_FP = 0 
+    epsilon = 0
+    for i in range(len(TP_sorted)):
+        # Update cumulative TP and FP up to the current index
+        cumulative_TP += TP_sorted[i]
+        cumulative_FP += FP_sorted[i]
+
+        # Calculate precision and recall at the current step
+
+        precision = cumulative_TP / (cumulative_TP + cumulative_FP + epsilon)
+        recall = cumulative_TP / ( len(matches) + epsilon)
+
+        # Append to the lists
+        precision_values.append(precision)
+        recall_values.append(recall)
+    
+    print(pre_prob_sorted)
+    print(TP_sorted)
+    print(FP_sorted)
+    return precision_values, recall_values
+
+
+def calculate_mAP(precision_list, recall_list):
+    # Convert lists to numpy arrays for easy manipulation
+    precision = np.array(precision_list)
+    recall = np.array(recall_list)
+
+    # List to hold unique precision values corresponding to unique recall values
+    unique_precision = []
+
+    # Iterate through the sorted recall values and keep only the first precision value for each unique recall
+    for i in range(len(recall)):
+        # Check if this recall value is the first occurrence of that unique value
+        if i == 0 or recall[i] != recall[i - 1]:
+            unique_precision.append(precision[i])
+
+
+    # Calculate mAP as the mean of the unique precision values
+    mAP = np.mean(unique_precision)
+    
+    return mAP
+
+# Example usage:
+precision = [1, 1, 0.66, 0.5, 0.6]
+recall = [0.33, 0.66, 0.66, 0.66, 1.0]
+
+mAP = calculate_mAP(precision, recall)
+print("mAP:", mAP)
+
+
 if __name__ == '__main__':
 
     
@@ -246,12 +384,41 @@ if __name__ == '__main__':
     plt.ylabel('Y-axis')
     plt.legend()
     plt.grid(True)
-    plt.savefig('/zhome/20/1/209339/02516-intro-to-dl-in-cv/poster-3-object-detection/figures/nms_result.png')
+    plt.savefig('../figures/Metrics_plots/nms.svg')
     plt.show()
 
 
 
 
+    ############################################################################################################
+    #                                               Calculate mAP                                              #
+    ############################################################################################################
+
+    # Example usage
+    ground_truths = [[{'xmin': 10, 'ymin': 20, 'xmax': 50, 'ymax': 60}, {'xmin': 100, 'ymin': 120, 'xmax': 150, 'ymax': 160}, {'xmin': 210, 'ymin': 220, 'xmax': 250, 'ymax': 260}]]
+
+    detections = [[
+        {'pre_bbox_xmin': 320, 'pre_bbox_ymin': 330, 'pre_bbox_xmax': 340, 'pre_bbox_ymax': 350, 'pre_class': 0.5}],
+        [{'pre_bbox_xmin': 100, 'pre_bbox_ymin': 120, 'pre_bbox_xmax': 150, 'pre_bbox_ymax': 160, 'pre_class': 0.99},
+        {'pre_bbox_xmin': 320, 'pre_bbox_ymin': 330, 'pre_bbox_xmax': 340, 'pre_bbox_ymax': 350, 'pre_class': 0.9},
+        {'pre_bbox_xmin': 10,  'pre_bbox_ymin': 20,  'pre_bbox_xmax': 50,  'pre_bbox_ymax': 60,  'pre_class': 0.95},
+        {'pre_bbox_xmin': 210, 'pre_bbox_ymin': 220, 'pre_bbox_xmax': 250, 'pre_bbox_ymax': 260, 'pre_class': 0.1}
+    ]]
+
+    # Calculate mAP
+    precision, recall = calculate_precision_recall_mAP(ground_truths, detections, 0.5)
+
+    plt.figure(figsize=(12,8))
+    plt.plot(recall, precision, 'r-')
+    plt.title('Precision vs recall')
+    plt.xlabel('recall')
+    plt.ylabel('precision')
+    plt.savefig('../figures/Metrics_plots/precision_recall.svg')
+    
+    print(precision)
+    print()
+    print(recall)
+    print(calculate_mAP(precision, recall))
 
 
 
