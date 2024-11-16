@@ -34,13 +34,14 @@ def train_model(
 
             fg_bbox_transforms = torch.stack(fg_bbox_transforms).cuda() if fg_bbox_transforms else torch.empty((0, 4)).cuda()
 
+
             # Forward pass
             optimizer.zero_grad()
             outputs_cls, outputs_bbox_transforms = model(images)
 
             # Classification Loss
             loss_cls = criterion_cls(outputs_cls, targets_cls)
-            cls_running_loss += loss_cls.item()
+            cls_running_loss += cls_weight * loss_cls.item()
 
             # Regression Loss
             if fg_indices:
@@ -49,7 +50,7 @@ def train_model(
             else:
                 loss_bbox = torch.tensor(0.0).cuda()
 
-            bbox_running_loss += loss_bbox.item()
+            bbox_running_loss += reg_weight * loss_bbox.item()
 
             # Combine Losses
             loss = cls_weight * loss_cls + reg_weight * loss_bbox

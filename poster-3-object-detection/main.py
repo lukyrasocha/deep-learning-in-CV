@@ -53,4 +53,4 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 # Training and Validation
 logger.working_on("Training model")
-train_model(model, train_loader, val_loader, criterion_cls, criterion_bbox, optimizer, num_epochs=10)
+train_model(model, train_loader, val_loader, criterion_cls, criterion_bbox, optimizer, num_epochs=10, iou_threshold=0.5, cls_weight = 0.1, reg_weight = 1)
