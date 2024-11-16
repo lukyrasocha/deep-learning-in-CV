@@ -1,4 +1,5 @@
-from matplotlib import patches
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import numpy as np
 import random
@@ -7,6 +8,7 @@ import torch
 from PIL import Image
 import matplotlib as mpl
 import cv2
+from utils.metrics import non_max_suppression
 
 color_primary = '#990000'  # University red
 color_secondary = '#2F3EEA'  # University blue
@@ -166,3 +168,79 @@ def visualize_proposal(image_proposal, target_proposal, box_thickness=1, figname
     plt.tight_layout()
     plt.savefig(f"../figures/{figname}", bbox_inches='tight', dpi=300)
     plt.show()
+
+def visualize_predictions(model, dataloader, use_nms=True, iou_threshold=0.3, num_images=5):
+    model.eval()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+
+    with torch.no_grad():
+        for idx, (original_images, proposal_images_list, coords, image_ids, ground_truths) in enumerate(dataloader):
+            if idx >= num_images:
+                break
+            
+            original_image = original_images[0]  # Single image in batch
+            proposals = coords[0]
+            
+            # Prepare proposals for the model
+            proposal_images = torch.stack(proposal_images_list[0]).to(device)
+
+            # Get predictions
+            outputs_cls, outputs_bbox_transforms, cls_probs = model.predict(proposal_images)
+
+            print(f"Image ID: {image_ids[0]}")
+            print(f"Number of Proposals: {len(proposals)}")
+            #print(f"Predicted Class Probabilities: {cls_probs.tolist()}")
+
+            # Prepare predictions
+            predictions = []
+            for i, proposal in enumerate(proposals):
+                pred_prob = cls_probs[i, 1].item()  # Probability of being a pothole
+                if pred_prob >= 0.5:  # Filter low-confidence predictions
+                    predictions.append({
+                        "pre_bbox_xmin": proposal['xmin'].item(),
+                        "pre_bbox_ymin": proposal['ymin'].item(),
+                        "pre_bbox_xmax": proposal['xmax'].item(),
+                        "pre_bbox_ymax": proposal['ymax'].item(),
+                        "pre_class": pred_prob
+                    })
+
+            print(f"Predictions of potholes before NMS: {len(predictions)}")
+
+            # Apply Non-Max Suppression if required
+            if use_nms:
+                predictions = non_max_suppression(predictions, iou_threshold=iou_threshold)
+                print(f"Predictions of potholes after NMS: {len(predictions)}")
+
+            
+            # Plot the original image with predictions
+            fig, ax = plt.subplots(1, figsize=(10, 8))
+            ax.imshow(original_image)
+            ax.set_title(f"Predictions for Image ID: {image_ids[0]}")
+            ax.axis('off')
+
+            # Plot predictions
+            for pred in predictions:
+                rect = patches.Rectangle(
+                    (pred['pre_bbox_xmin'], pred['pre_bbox_ymin']),
+                    pred['pre_bbox_xmax'] - pred['pre_bbox_xmin'],
+                    pred['pre_bbox_ymax'] - pred['pre_bbox_ymin'],
+                    linewidth=2,
+                    edgecolor='r',
+                    facecolor='none'
+                )
+                ax.add_patch(rect)
+                ax.text(
+                    pred['pre_bbox_xmin'], pred['pre_bbox_ymin'] - 10,
+                    f"Conf: {pred['pre_class']:.2f}",
+                    color='white', fontsize=8,
+                    bbox=dict(facecolor='red', alpha=0.5)
+                )
+
+            plt.axis('off')
+            plt.tight_layout()
+            plt.show()
+
+            # Save the figure
+            nms = "true" if use_nms else "false"
+            plt.savefig(f"figures/predictions_image_{image_ids[0]}_nms_{nms}.png", bbox_inches='tight', dpi=300)

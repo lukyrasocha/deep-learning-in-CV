@@ -1,11 +1,18 @@
 import torch
 from utils.logger import logger
 from torchvision.ops import box_iou
+import matplotlib.pyplot as plt
+import os
+
 
 def train_model(
     model, train_loader, val_loader, criterion_cls, criterion_bbox,
     optimizer, num_epochs=1, iou_threshold=0.5, cls_weight=1, reg_weight=1
 ):
+
+    train_losses = []
+    val_losses = []
+
     for epoch in range(num_epochs):
         # ------------------------
         # Training Phase
@@ -61,6 +68,7 @@ def train_model(
         avg_train_cls_loss = cls_running_loss / len(train_loader)
         avg_train_bbox_loss = bbox_running_loss / len(train_loader)
         avg_train_loss = running_loss / len(train_loader)
+        train_losses.append(avg_train_loss)
 
         # ------------------------
         # Validation Phase
@@ -119,9 +127,36 @@ def train_model(
         avg_val_cls_loss = val_cls_loss / total_proposals if total_proposals > 0 else 0.0
         avg_val_bbox_loss = val_bbox_loss / total_positive_proposals if total_positive_proposals > 0 else 0.0
         avg_val_loss = avg_val_cls_loss + avg_val_bbox_loss
+        val_losses.append(avg_val_loss)
+
 
         logger.info(
             f"Epoch {epoch + 1}/{num_epochs} - "
             f"Train Loss: {avg_train_loss:.4f} (Cls: {avg_train_cls_loss:.4f}, Reg: {avg_train_bbox_loss:.4f}) - "
             f"Val Loss: {avg_val_loss:.4f} (Cls: {avg_val_cls_loss:.4f}, Reg: {avg_val_bbox_loss:.4f})"
         )
+    # ------------------------
+    # Plot and Save Loss Curves
+    # ------------------------
+    figures_dir_png = "figures/png"
+    figures_dir_svg = "figures/svg"
+    os.makedirs(figures_dir_png, exist_ok=True)
+    os.makedirs(figures_dir_svg, exist_ok=True)
+
+    plt.figure(figsize=(10, 6))
+    
+    # Plot training loss in red
+    plt.plot(range(1, num_epochs + 1), train_losses, label='RCNN Train Loss', color='#990000', marker='o')
+    
+    # Plot validation loss in blue
+    plt.plot(range(1, num_epochs + 1), val_losses, label='RCNN Val Loss', color='#2F3EEA', marker='o')
+    
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss', fontsize=18, color='#990000')
+    plt.legend(loc='upper right')
+    plt.grid(alpha=0.3)
+
+    # Save plots
+    plt.savefig(os.path.join(figures_dir_png, "loss_curve.png"), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(figures_dir_svg, "loss_curve.svg"), format='svg', bbox_inches='tight')

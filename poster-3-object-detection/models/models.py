@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch
 from torchvision import models
 
 
@@ -33,3 +34,8 @@ class ResNetTwoHeads(nn.Module):
         cls = self.classifier(features)
         bbox_transforms = self.regressor(features)
         return cls, bbox_transforms
+
+    def predict(self, x):
+        cls, bbox_transforms = self.forward(x)
+        cls_probs = torch.softmax(cls, dim=1)  # Convert logits to probabilities
+        return cls, bbox_transforms, cls_probs
