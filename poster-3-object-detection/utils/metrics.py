@@ -194,7 +194,7 @@ def non_max_suppression(
     return bboxes_after_nms
 
 
-def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
+def calculate_precision_recall(ground_truths, predictions, iou_threshold):
     """
     Calculate precision, recall, and mean average precision (mAP) for object detection.
 
@@ -220,7 +220,7 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
 
     TP = []
     FP = []
-    matches = []
+    total_gt = []
     pre_prob = []
     
     # Get ground truth and predictions for one image
@@ -233,7 +233,7 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
         gt_matched = set()
 
         for i, pred_box in enumerate(pred_boxes):
-            print(pred_box)
+            
             # This below is used to keep track of the highest IoU for a prediction. We use j as the index for the ground truth 
             best_iou = 0.0
             best_gt_idx = -1
@@ -258,7 +258,7 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
             if best_iou >= iou_threshold:
                 TP.append(1)
                 FP.append(0)
-                matches.append(1)
+                total_gt.append(1)
             else:
                 TP.append(0)
                 FP.append(1)
@@ -283,7 +283,7 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
 
     cumulative_TP = 0 
     cumulative_FP = 0 
-    epsilon = 0
+    epsilon = np.finfo(float).eps
     for i in range(len(TP_sorted)):
         # Update cumulative TP and FP up to the current index
         cumulative_TP += TP_sorted[i]
@@ -292,7 +292,7 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
         # Calculate precision and recall at the current step
 
         precision = cumulative_TP / (cumulative_TP + cumulative_FP + epsilon)
-        recall = cumulative_TP / ( len(matches) + epsilon)
+        recall = cumulative_TP / ( len(total_gt) + epsilon)
 
         # Append to the lists
         precision_values.append(precision)
@@ -399,7 +399,7 @@ if __name__ == '__main__':
     ]]
 
     # Calculate mAP
-    precision, recall = calculate_precision_recall_mAP(ground_truths, detections, 0.5)
+    precision, recall = calculate_precision_recall(ground_truths, detections, 0.5)
 
     plt.figure(figsize=(12,8))
     plt.plot(recall, precision, 'r-')

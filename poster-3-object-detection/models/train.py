@@ -94,6 +94,6 @@ def train_model(model, train_loader, val_loader, criterion_cls, criterion_bbox, 
                 # Total Validation Loss
                 val_loss = loss_cls + loss_bbox
                 val_running_loss += val_loss.item()
-
+            
         # Validation phase
         logger.info(f'Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_running_loss / len(val_loader)}')
