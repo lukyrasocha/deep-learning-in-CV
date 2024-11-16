@@ -1,5 +1,9 @@
-from typing import Dict, List
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+
+from typing import Dict, List
+
 def IoU(
     box1_xmin: float,
     box1_ymin: float,
@@ -220,44 +224,44 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
     pre_prob = []
     
     # Get ground truth and predictions for one image
-    for pred_boxes in predictions:
-        for gt_boxes in ground_truths:
-            # Sort the predictions so we are looking on the boxes with the highest probability
-            pred_boxes = sorted(pred_boxes, key=lambda x: x['pre_class'], reverse=True)
 
-            # Create an set, to ensure that we are not going to match multiple prediction with the same ground truth box
-            gt_matched = set()
+    for gt_boxes, pred_boxes in zip(ground_truths, predictions):
+        # Sort the predictions so we are looking on the boxes with the highest probability
+        pred_boxes = sorted(pred_boxes, key=lambda x: x['pre_class'], reverse=True)
 
-            for i, pred_box in enumerate(pred_boxes):
-                print(pred_box)
-                # This below is used to keep track of the highest IoU for a prediction. We use j as the index for the ground truth 
-                best_iou = 0.0
-                best_gt_idx = -1
-                for j, gt_box in enumerate(gt_boxes):
+        # Create an set, to ensure that we are not going to match multiple prediction with the same ground truth box
+        gt_matched = set()
 
-                    #If we don't have the ground truth in our set we will calculate the IoU
-                    if j not in gt_matched:
-                        iou = IoU(pred_box["pre_bbox_xmin"], pred_box["pre_bbox_ymin"],
-                            pred_box["pre_bbox_xmax"], pred_box["pre_bbox_ymax"], 
-                            gt_box["xmin"], gt_box["ymin"],
-                            gt_box["xmax"], gt_box["ymax"]
-                        )
+        for i, pred_box in enumerate(pred_boxes):
+            print(pred_box)
+            # This below is used to keep track of the highest IoU for a prediction. We use j as the index for the ground truth 
+            best_iou = 0.0
+            best_gt_idx = -1
+            for j, gt_box in enumerate(gt_boxes):
 
-                        # If it is above the best IoU, we will remember it
-                        if iou > best_iou:
-                            best_iou = iou
-                            best_gt_idx = j
+                #If we don't have the ground truth in our set we will calculate the IoU
+                if j not in gt_matched:
+                    iou = IoU(pred_box["pre_bbox_xmin"], pred_box["pre_bbox_ymin"],
+                        pred_box["pre_bbox_xmax"], pred_box["pre_bbox_ymax"], 
+                        gt_box["xmin"], gt_box["ymin"],
+                        gt_box["xmax"], gt_box["ymax"]
+                    )
 
-                # Append the predicted probability so we can use it to sort when calculation the mAP
-                pre_prob.append(pred_box['pre_class'])
-                # Check if the best IoU is above a certain threshold. If it is, we will append 1 to TP and 0 to FP
-                if best_iou >= iou_threshold:
-                    TP.append(1)
-                    FP.append(0)
-                    matches.append(1)
-                else:
-                    TP.append(0)
-                    FP.append(1)
+                    # If it is above the best IoU, we will remember it
+                    if iou > best_iou:
+                        best_iou = iou
+                        best_gt_idx = j
+
+            # Append the predicted probability so we can use it to sort when calculation the mAP
+            pre_prob.append(pred_box['pre_class'])
+            # Check if the best IoU is above a certain threshold. If it is, we will append 1 to TP and 0 to FP
+            if best_iou >= iou_threshold:
+                TP.append(1)
+                FP.append(0)
+                matches.append(1)
+            else:
+                TP.append(0)
+                FP.append(1)
 
     # Convert the list into numpy, so we can sort based on the highest probability             
     TP = np.array(TP)
@@ -294,9 +298,6 @@ def calculate_precision_recall_mAP(ground_truths, predictions, iou_threshold):
         precision_values.append(precision)
         recall_values.append(recall)
     
-    print(pre_prob_sorted)
-    print(TP_sorted)
-    print(FP_sorted)
     return precision_values, recall_values
 
 
@@ -320,13 +321,6 @@ def calculate_mAP(precision_list, recall_list):
     
     return mAP
 
-# Example usage:
-precision = [1, 1, 0.66, 0.5, 0.6]
-recall = [0.33, 0.66, 0.66, 0.66, 1.0]
-
-mAP = calculate_mAP(precision, recall)
-print("mAP:", mAP)
-
 
 if __name__ == '__main__':
 
@@ -343,8 +337,6 @@ if __name__ == '__main__':
         {'pre_bbox_xmin': 110, 'pre_bbox_ymin': 130, 'pre_bbox_xmax': 150, 'pre_bbox_ymax': 170, 'pre_class': 0.9}
     ]
 
-    import matplotlib.pyplot as plt
-    import matplotlib.patches as patches
 
     # Run the function
     results = non_max_suppression(example_tensor_dicts)
@@ -395,7 +387,8 @@ if __name__ == '__main__':
     ############################################################################################################
 
     # Example usage
-    ground_truths = [[{'xmin': 10, 'ymin': 20, 'xmax': 50, 'ymax': 60}, {'xmin': 100, 'ymin': 120, 'xmax': 150, 'ymax': 160}, {'xmin': 210, 'ymin': 220, 'xmax': 250, 'ymax': 260}]]
+    ground_truths = [[{'xmin': 10, 'ymin': 20, 'xmax': 50, 'ymax': 60}, {'xmin': 100, 'ymin': 120, 'xmax': 150, 'ymax': 160}, {'xmin': 210, 'ymin': 220, 'xmax': 250, 'ymax': 260}],
+                     [{'xmin': 10, 'ymin': 20, 'xmax': 50, 'ymax': 60}, {'xmin': 100, 'ymin': 120, 'xmax': 150, 'ymax': 160}, {'xmin': 210, 'ymin': 220, 'xmax': 250, 'ymax': 260}]]
 
     detections = [[
         {'pre_bbox_xmin': 320, 'pre_bbox_ymin': 330, 'pre_bbox_xmax': 340, 'pre_bbox_ymax': 350, 'pre_class': 0.5}],
@@ -415,10 +408,10 @@ if __name__ == '__main__':
     plt.ylabel('precision')
     plt.savefig('../figures/Metrics_plots/precision_recall.svg')
     
-    print(precision)
+    print('The precision vector is:', precision)
     print()
-    print(recall)
-    print(calculate_mAP(precision, recall))
+    print('The recall vector is:', recall)
+    print('The mAP value is:', calculate_mAP(precision, recall))
 
 
 
