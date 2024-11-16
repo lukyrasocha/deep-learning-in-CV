@@ -134,8 +134,6 @@ class ValAndTestDataset(Dataset):
         assert split in ["val", "test"], "Split must be either 'val' or 'test'"
         self.proposal_dir = os.path.join(base_dir, f'{self.split}_data', 'targets')
 
-        print(self.proposal_dir)
-
         if not os.path.exists(self.proposal_dir):
             raise FileNotFoundError(f"Directory not found: {self.proposal_dir}")
 
