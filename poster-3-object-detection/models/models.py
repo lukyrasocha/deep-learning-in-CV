@@ -1,12 +1,16 @@
 import torch.nn as nn
 from torchvision import models
 
+
+
 # Model with pretrained ResNet backbone, classification, and regression heads
 class ResNetTwoHeads(nn.Module):
     def __init__(self, num_classes=2):
         super(ResNetTwoHeads, self).__init__()
         
-        self.backbone = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+        # import resnet 18 
+        self.backbone = models.resnet18(pretrained=True)
+        #self.backbone = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
         num_features = self.backbone.fc.in_features
         self.backbone.fc = nn.Identity()  # Remove the original fully connected layer
 
