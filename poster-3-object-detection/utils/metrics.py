@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-
+import torch
 from typing import Dict, List
 
 def IoU(
@@ -300,26 +300,56 @@ def calculate_precision_recall(ground_truths, predictions, iou_threshold):
     
     return precision_values, recall_values
 
-
 def calculate_mAP(precision_list, recall_list):
-    # Convert lists to numpy arrays for easy manipulation
+    """
+    Calculate mean Average Precision (mAP) from precision and recall lists.
+    """
+    # Convert lists to numpy arrays
     precision = np.array(precision_list)
     recall = np.array(recall_list)
 
-    # List to hold unique precision values corresponding to unique recall values
-    unique_precision = []
+    # Check if precision and recall lists are empty
+    if len(precision) == 0 or len(recall) == 0:
+        return 0.0
 
-    # Iterate through the sorted recall values and keep only the first precision value for each unique recall
-    for i in range(len(recall)):
-        # Check if this recall value is the first occurrence of that unique value
-        if i == 0 or recall[i] != recall[i - 1]:
-            unique_precision.append(precision[i])
+    # Append sentinel values at the start and end
+    mrec = np.concatenate(([0.0], recall, [1.0]))
+    mpre = np.concatenate(([0.0], precision, [0.0]))
 
+    # Compute the precision envelope
+    for i in range(len(mpre) - 1, 0, -1):
+        mpre[i - 1] = np.maximum(mpre[i - 1], mpre[i])
 
-    # Calculate mAP as the mean of the unique precision values
-    mAP = np.mean(unique_precision)
-    
+    # Calculate mAP
+    idx = np.where(mrec[1:] != mrec[:-1])[0]
+    mAP = np.sum((mrec[idx + 1] - mrec[idx]) * mpre[idx + 1])
+
     return mAP
+
+# utils/metrics.py
+def compute_iou(box1, box2):
+    """
+    Compute IoU between two boxes.
+    """
+    # Intersection coordinates
+    x_left = max(box1[0], box2[0])
+    y_top = max(box1[1], box2[1])
+    x_right = min(box1[2], box2[2])
+    y_bottom = min(box1[3], box2[3])
+
+    if x_right < x_left or y_bottom < y_top:
+        return 0.0
+
+    # Areas
+    intersection_area = (x_right - x_left) * (y_bottom - y_top)
+    box1_area = (box1[2] - box1[0]) * (box1[3] - box1[1])
+    box2_area = (box2[2] - box2[0]) * (box2[3] - box2[1])
+
+    iou = intersection_area / float(box1_area + box2_area - intersection_area + 1e-6)
+    return iou
+
+
+
 
 
 if __name__ == '__main__':
@@ -378,7 +408,6 @@ if __name__ == '__main__':
     plt.grid(True)
     plt.savefig('../figures/Metrics_plots/nms.svg')
     plt.show()
-
 
 
 
