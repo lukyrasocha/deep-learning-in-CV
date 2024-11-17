@@ -48,7 +48,7 @@ if __name__ == '__main__':
     IOU_UPPER_LIMIT = 0.5
     IOU_LOWER_LIMIT = 0.5
     METHOD = 'quality'
-    MAX_PROPOSALS = 100
+    MAX_PROPOSALS = 500
 
     transform = transforms.Compose([
         transforms.Resize((256, 256)),
