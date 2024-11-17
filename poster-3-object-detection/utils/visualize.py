@@ -241,7 +241,252 @@ def visualize_predictions(model, dataloader, use_nms=True, iou_threshold=0.3, nu
             plt.tight_layout()
             plt.show()
 
+            os.makedirs(f'figures/png/{experiment_name}', exist_ok=True)
+            os.makedirs(f'figures/svg/{experiment_name}', exist_ok=True)
+
             # Save the figure
             nms = "true" if use_nms else "false"
-            plt.savefig(f"figures/png/predictions_image_{experiment_name}_{image_ids[0]}_nms_{nms}.png", bbox_inches='tight', dpi=300)
-            plt.savefig(f"figures/svg/predictions_image_{experiment_name}_{image_ids[0]}_nms_{nms}.svg", bbox_inches='tight', dpi=300)
+            plt.savefig(f"figures/png/{experiment_name}/predictions_image_{experiment_name}_{image_ids[0]}_nms_{nms}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"figures/svg/{experiment_name}/predictions_image_{experiment_name}_{image_ids[0]}_nms_{nms}.svg", bbox_inches='tight', dpi=300)
+
+def visualize_pred_training_data(model, train_loader, use_nms=True, iou_threshold=0.3, num_images=5, experiment_name='experiment'):
+    """
+    Visualize predictions and ground truth for training data.
+
+    Args:
+        model: The trained model.
+        train_loader: DataLoader for the training data.
+        use_nms: Whether to apply non-max suppression.
+        iou_threshold: IoU threshold for NMS.
+        num_images: Number of images to visualize.
+        experiment_name: Name of the experiment (used for saving figures).
+    """
+    model.eval()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+
+    with torch.no_grad():
+        for idx, (images, targets, indices) in enumerate(train_loader):
+            if idx >= num_images:
+                break
+            
+            images = images.to(device)
+            outputs_cls, outputs_bbox_transforms, cls_probs = model.predict(images)
+
+            print(f"Image Index: {indices}")
+            print(f"Number of Proposals: {len(targets)}")
+
+            # Prepare ground truth and predictions
+            ground_truths = []
+            predictions = []
+            ground_truths = []
+
+            for target in targets:
+                # Only include positive proposals
+                if target["label"].item() == 1:
+                    gt_bbox = {
+                        "xmin": target["gt_bbox_xmin"].item(),
+                        "ymin": target["gt_bbox_ymin"].item(),
+                        "xmax": target["gt_bbox_xmax"].item(),
+                        "ymax": target["gt_bbox_ymax"].item(),
+                    }
+                    ground_truths.append(gt_bbox)
+
+            # Extract predictions
+            for i, target in enumerate(targets):
+                pred_prob = cls_probs[i, 1].item()  # Probability of being a pothole
+                if pred_prob >= 0.5:  # Filter low-confidence predictions
+                    pred_bbox = {
+                        "pre_bbox_xmin": target['image_xmin'].item(),
+                        "pre_bbox_ymin": target['image_ymin'].item(),
+                        "pre_bbox_xmax": target['image_xmax'].item(),
+                        "pre_bbox_ymax": target['image_ymax'].item(),
+                        "pre_class": pred_prob
+                    }
+                    predictions.append(pred_bbox)
+
+            print(f"Ground Truth Boxes: {len(ground_truths)}")
+            print(f"Predictions Before NMS: {len(predictions)}")
+
+            # Apply Non-Max Suppression if required
+            if use_nms:
+                predictions = non_max_suppression(predictions, iou_threshold=iou_threshold)
+                print(f"Predictions After NMS: {len(predictions)}")
+
+            # Visualize the original image, predictions, and ground truth
+            fig, ax = plt.subplots(1, figsize=(10, 8))
+            ax.imshow(images[0].permute(1, 2, 0).cpu().numpy())
+            ax.set_title(f"Training Data Visualization - Index: {indices[0]}")
+            ax.axis('off')
+
+            # Plot ground truth boxes
+            for gt in ground_truths:
+                rect = patches.Rectangle(
+                    (gt["xmin"], gt["ymin"]),
+                    gt["xmax"] - gt["xmin"],
+                    gt["ymax"] - gt["ymin"],
+                    linewidth=2,
+                    edgecolor='g',
+                    facecolor='none'
+                )
+                ax.add_patch(rect)
+
+            # Plot predicted boxes
+            for pred in predictions:
+                rect = patches.Rectangle(
+                    (pred["pre_bbox_xmin"], pred["pre_bbox_ymin"]),
+                    pred["pre_bbox_xmax"] - pred["pre_bbox_xmin"],
+                    pred["pre_bbox_ymax"] - pred["pre_bbox_ymin"],
+                    linewidth=2,
+                    edgecolor='r',
+                    facecolor='none'
+                )
+                ax.add_patch(rect)
+                ax.text(
+                    pred["pre_bbox_xmin"], pred["pre_bbox_ymin"] - 10,
+                    f"Conf: {pred['pre_class']:.2f}",
+                    color='white', fontsize=8,
+                    bbox=dict(facecolor='red', alpha=0.5)
+                )
+
+            plt.axis('off')
+            plt.tight_layout()
+            plt.show()
+
+            os.makedirs(f'figures/png/{experiment_name}', exist_ok=True)
+            os.makedirs(f'figures/svg/{experiment_name}', exist_ok=True)
+            # Save the visualization
+            nms = "true" if use_nms else "false"
+            plt.savefig(f"figures/png/{experiment_name}/training_visualization_{experiment_name}_{indices[0]}_nms_{nms}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"figures/svg/{experiment_name}/training_visualization_{experiment_name}_{indices[0]}_nms_{nms}.svg", bbox_inches='tight', dpi=300)
+
+
+def visualize_pred_training_data(
+    model, 
+    train_loader, 
+    use_nms=True, 
+    iou_threshold=0.3, 
+    num_images=5, 
+    experiment_name='experiment', 
+    image_dir='Potholes/annotated-images'
+):
+    """
+    Visualize predictions and ground truth for training data with the original image.
+
+    Args:
+        model: The trained model.
+        train_loader: DataLoader for the training data.
+        use_nms: Whether to apply non-max suppression.
+        iou_threshold: IoU threshold for NMS.
+        num_images: Number of images to visualize.
+        experiment_name: Name of the experiment (used for saving figures).
+        image_dir: Directory containing the original images.
+    """
+    model.eval()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = model.to(device)
+
+    with torch.no_grad():
+        for idx, (images, targets, indices) in enumerate(train_loader):
+            if idx >= num_images:
+                break
+
+            # Retrieve the corresponding original image name
+            original_image_name = targets[0]['original_image_name']  # Assuming all targets share the same image
+            image_path = os.path.join(image_dir, f"{original_image_name}.jpg")
+
+            if not os.path.exists(image_path):
+                print(f"Image {image_path} not found. Skipping...")
+                continue
+
+            # Load the original image
+            with Image.open(image_path) as img:
+                original_image = img.convert("RGB")
+
+            # Prepare predictions
+            outputs_cls, outputs_bbox_transforms, cls_probs = model.predict(images.to(device))
+            print(f"Image Index: {indices}")
+            print(f"Number of Proposals: {len(targets)}")
+
+            ground_truths = []
+            predictions = []
+
+            # Collect ground truth bounding boxes
+            for target in targets:
+                if target["label"].item() == 1:  # Include only positive proposals
+                    gt_bbox = {
+                        "xmin": target["gt_bbox_xmin"].item(),
+                        "ymin": target["gt_bbox_ymin"].item(),
+                        "xmax": target["gt_bbox_xmax"].item(),
+                        "ymax": target["gt_bbox_ymax"].item(),
+                    }
+                    ground_truths.append(gt_bbox)
+
+            # Collect predictions
+            for i, target in enumerate(targets):
+                pred_prob = cls_probs[i, 1].item()  # Probability of being a pothole
+                if pred_prob >= 0.5:  # Filter low-confidence predictions
+                    pred_bbox = {
+                        "pre_bbox_xmin": target['image_xmin'].item(),
+                        "pre_bbox_ymin": target['image_ymin'].item(),
+                        "pre_bbox_xmax": target['image_xmax'].item(),
+                        "pre_bbox_ymax": target['image_ymax'].item(),
+                        "pre_class": pred_prob
+                    }
+                    predictions.append(pred_bbox)
+
+            print(f"Ground Truth Boxes: {len(ground_truths)}")
+            print(f"Predictions Before NMS: {len(predictions)}")
+
+            # Apply Non-Max Suppression if required
+            if use_nms:
+                predictions = non_max_suppression(predictions, iou_threshold=iou_threshold)
+                print(f"Predictions After NMS: {len(predictions)}")
+
+            # Visualize the original image, predictions, and ground truth
+            fig, ax = plt.subplots(1, figsize=(10, 8))
+            ax.imshow(original_image)
+            ax.set_title(f"Training Data Visualization - {original_image_name}")
+            ax.axis('off')
+
+            # Plot ground truth boxes in green
+            for gt in ground_truths:
+                rect = patches.Rectangle(
+                    (gt["xmin"], gt["ymin"]),
+                    gt["xmax"] - gt["xmin"],
+                    gt["ymax"] - gt["ymin"],
+                    linewidth=2,
+                    edgecolor='g',
+                    facecolor='none',
+                    label="Ground Truth"
+                )
+                ax.add_patch(rect)
+
+            # Plot predicted boxes in red
+            for pred in predictions:
+                rect = patches.Rectangle(
+                    (pred["pre_bbox_xmin"], pred["pre_bbox_ymin"]),
+                    pred["pre_bbox_xmax"] - pred["pre_bbox_xmin"],
+                    pred["pre_bbox_ymax"] - pred["pre_bbox_ymin"],
+                    linewidth=2,
+                    edgecolor='r',
+                    facecolor='none',
+                    label="Prediction"
+                )
+                ax.add_patch(rect)
+                ax.text(
+                    pred["pre_bbox_xmin"], pred["pre_bbox_ymin"] - 10,
+                    f"Conf: {pred['pre_class']:.2f}",
+                    color="white",
+                    fontsize=8,
+                    bbox=dict(facecolor="red", alpha=0.5)
+                )
+
+            plt.axis("off")
+            plt.tight_layout()
+            # Save the visualization
+            os.makedirs(f'figures/png/{experiment_name}', exist_ok=True)
+            os.makedirs(f'figures/svg/{experiment_name}', exist_ok=True)
+            nms = "true" if use_nms else "false"
+            plt.savefig(f"figures/png/{experiment_name}/training_visualization_{experiment_name}_{original_image_name}_nms_{nms}.png", bbox_inches="tight", dpi=300)
+            plt.savefig(f"figures/svg/{experiment_name}/training_visualization_{experiment_name}_{original_image_name}_nms_{nms}.svg", bbox_inches="tight", dpi=300)

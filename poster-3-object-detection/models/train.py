@@ -312,9 +312,13 @@ def evaluate_model(model, val_loader, split="val", iou_threshold=0.5, confidence
     recall = np.array(recall_values)
 
     # Save Precision-Recall curve with unique filename
+
+    os.makedirs(f'figures/png/{experiment_name}', exist_ok=True)
+    os.makedirs(f'figures/svg/{experiment_name}', exist_ok=True)
+
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    pr_curve_filename_png = f"figures/png/precision_recall_curve_{split}_{experiment_name}_{timestamp}.png"
-    pr_curve_filename_svg = f"figures/svg/precision_recall_curve_{split}_{experiment_name}_{timestamp}.svg"
+    pr_curve_filename_png = f"figures/png/{experiment_name}/precision_recall_curve_{split}_{experiment_name}_{timestamp}.png"
+    pr_curve_filename_svg = f"figures/svg/{experiment_name}/precision_recall_curve_{split}_{experiment_name}_{timestamp}.svg"
     # Ensure directories exist
     os.makedirs("figures/png", exist_ok=True)
     os.makedirs("figures/svg", exist_ok=True)
