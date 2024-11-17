@@ -143,31 +143,15 @@ def non_max_suppression(
 ) -> List[Dict]:
     """
     Applies Non-Maximum Suppression (NMS) to filter overlapping bounding boxes based on their Intersection over Union (IoU) scores.
-
-    Parameters:
-    -----------
-    tensor_dict_list : list of dict
-        A list of dictionaries where each dictionary contains information about a bounding box and its associated confidence score.
-        Each dictionary must have the following keys:
-        - 'pre_class': The confidence score of the bounding box (float).
-        - 'pre_bbox_xmin', 'pre_bbox_ymin', 'pre_bbox_xmax', 'pre_bbox_ymax': Coordinates of the bounding box 
-          (xmin, ymin, xmax, ymax).
-    
-    iou_threshold : float, optional, default=0.3
-        The IoU threshold for filtering overlapping bounding boxes. A box will be removed if its IoU with a higher 
-        confidence box is greater than this threshold.
-
-    Returns:
-    --------
-    list of dict
-        A list of dictionaries, each containing the remaining bounding boxes after applying Non-Maximum Suppression.
-        These boxes are sorted by their confidence scores in descending order.
     """
+    if not tensor_dict_list:
+        return []
 
+    # Sort the predictions by confidence score in descending order
     sorted_targets = sorted(
-        [tensor for tensor in tensor_dict_list if tensor['pre_class'] >= 0.5],  # This line removes the predictions that are below 0.5 since it will be a background
-        key=lambda x: x['pre_class'],                                           # TUse the pre_class to decide the order for the list
-        reverse=True                                                            # Get the highest first
+        tensor_dict_list,
+        key=lambda x: x['pre_class'],
+        reverse=True
     )
 
     bboxes_after_nms = []
@@ -180,11 +164,12 @@ def non_max_suppression(
         # Filter out overlapping boxes based on IoU
         remaining_targets = []
         for target in sorted_targets:
-            iou = IoU(chosen_target["pre_bbox_xmin"], chosen_target["pre_bbox_ymin"],
-                      chosen_target["pre_bbox_xmax"], chosen_target["pre_bbox_ymax"], 
-                      target["pre_bbox_xmin"], target["pre_bbox_ymin"],
-                      target["pre_bbox_xmax"], target["pre_bbox_ymax"]
-                      )
+            iou = IoU(
+                chosen_target["pre_bbox_xmin"], chosen_target["pre_bbox_ymin"],
+                chosen_target["pre_bbox_xmax"], chosen_target["pre_bbox_ymax"], 
+                target["pre_bbox_xmin"], target["pre_bbox_ymin"],
+                target["pre_bbox_xmax"], target["pre_bbox_ymax"]
+            )
 
             if iou < iou_threshold:
                 remaining_targets.append(target)
