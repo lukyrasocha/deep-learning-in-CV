@@ -6,7 +6,7 @@ import os
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from models.models import ResNetTwoHeads
-from models.eval import train_model, evaluate_model
+from models.train import train_model, evaluate_model
 from utils.load_data import Trainingset, ValAndTestDataset, collate_fn, val_test_collate_fn_cropped
 from utils.logger import logger
 from utils.visualize import visualize_predictions
@@ -134,12 +134,20 @@ def main(args):
         num_images=args.num_images
     )
 
-    # Save the Trained Model 
+        # Save the Trained Model
     logger.working_on("Saving model")
     os.makedirs("saved_models", exist_ok=True)
-    model_save_path = f"saved_models/model_{args.experiment_name}.pth"
-    torch.save(model.state_dict(), model_save_path)
-    logger.info(f"Model saved to {model_save_path}")
+    
+    # Save state_dict (recommended)
+    state_dict_save_path = f"saved_models/model_state_dict_{args.experiment_name}.pth"
+    torch.save(model.state_dict(), state_dict_save_path)
+    logger.info(f"Model state_dict saved to {state_dict_save_path}")
+    
+    # Save the Entire Model (optional)
+    model_save_path = f"saved_models/model_full_{args.experiment_name}.pth"
+    torch.save(model, model_save_path)
+    logger.info(f"Entire model saved to {model_save_path}")
+
 
     # Evaluate the Model
     logger.working_on("Evaluating model")
@@ -150,6 +158,9 @@ def main(args):
         iou_threshold=args.iou_threshold, 
         confidence_threshold=args.confidence_threshold
     )
+
+    print(f"precision: {precision}")
+    print(f"recall: {recall}")
     logger.info(f"Experiment {args.experiment_name} - mAP: {ap:.4f}")
 
     logger.success("Predictions saved to 'figures/'")
