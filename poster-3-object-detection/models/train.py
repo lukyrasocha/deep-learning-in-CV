@@ -175,8 +175,7 @@ def train_model(
         wandb.log({
             "val/cls_loss": avg_val_cls_loss,
             "val/bbox_loss": avg_val_bbox_loss,
-            "val/total_loss": avg_val_loss,
-            "epoch": epoch + 1
+            "val/total_loss": avg_val_loss
         })
 
     wandb.finish()
