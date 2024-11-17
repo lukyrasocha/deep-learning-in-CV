@@ -9,7 +9,7 @@ from models.models import ResNetTwoHeads
 from models.train import train_model, evaluate_model
 from utils.load_data import Trainingset, ValAndTestDataset, collate_fn, val_test_collate_fn_cropped
 from utils.logger import logger
-from utils.visualize import visualize_predictions
+from utils.visualize import visualize_predictions, visualize_pred_training_data
 import torch
 from torch.utils.data import Subset
 
@@ -152,6 +152,10 @@ def main(args):
         iou_threshold=args.iou_threshold,  # For NMS, overlapping boxes with 0.3 IoU will get filtered (the better one will stay)
         num_images=args.num_images,
         experiment_name=args.experiment_name
+    )
+    visualize_pred_training_data(
+        model, train_loader, use_nms=True, iou_threshold=args.iou_threshold, 
+        num_images=5, experiment_name=args.experiment_name
     )
 
         # Save the Trained Model
