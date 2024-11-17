@@ -254,14 +254,14 @@ def evaluate_model(model, val_loader, iou_threshold=0.5, confidence_threshold=0.
                 scores = torch.softmax(outputs_cls, dim=1)[:, 1]  # Get pothole scores
                 boxes = coords[idx]  # coords for this image
                 # After computing scores in evaluate_model
-                print(f"Scores before thresholding: {scores}")
+                #print(f"Scores before thresholding: {scores}")
 
 
                 # Filter out low-confidence proposals
                 mask = scores >= confidence_threshold
                 scores = scores[mask]
                 boxes = [boxes[i] for i in range(len(boxes)) if mask[i]]
-                print(f"Number of scores before thresholding: {len(scores)}")
+                #print(f"Number of scores before thresholding: {len(scores)}")
 
                 if len(scores) == 0:
                     predictions.append([])  # No predictions for this image
