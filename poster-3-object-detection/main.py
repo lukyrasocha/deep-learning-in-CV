@@ -10,7 +10,6 @@ from models.train import train_model, evaluate_model
 from utils.load_data import Trainingset, ValAndTestDataset, collate_fn, val_test_collate_fn_cropped
 from utils.logger import logger
 from utils.visualize import visualize_predictions
-from utils.metrics import non_max_suppression
 import torch
 from torch.utils.data import Subset
 
@@ -52,8 +51,16 @@ def main(args):
         orig_data_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Potholes')
     )
 
+    logger.working_on("Loading Test data")
+    test_dataset = ValAndTestDataset(
+        base_dir=os.path.join(blackhole_path,'DLCV'),
+        split='test', 
+        transform=transform,
+        orig_data_path=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Potholes')
+    )
     assert len(train_dataset) != 0, "Training data not loaded correctly"
     assert len(val_dataset) != 0, "Validation data not loaded correctly"
+    assert len(test_dataset) != 0, "Test data not loaded correctly"
 
     # Handle Subset Selection
     if args.subset_size is not None or args.subset_fraction is not None:
@@ -76,20 +83,25 @@ def main(args):
         # Generate random indices
         train_indices = list(range(len(train_dataset)))
         val_indices = list(range(len(val_dataset)))
+        test_indices = list(range(len(test_dataset)))
         random.shuffle(train_indices)
         random.shuffle(val_indices)
+        random.shuffle(test_indices)
 
         train_subset_indices = train_indices[:subset_size]
         val_subset_indices = val_indices[:subset_size_val]
+        test_subset_indices = test_indices[:subset_size_val]
 
         # Create Subset objects
         train_subset = Subset(train_dataset, train_subset_indices)
         val_subset = Subset(val_dataset, val_subset_indices)
+        test_subset = Subset(test_dataset, test_subset_indices)
 
         logger.info(f"Using subset of size {subset_size} for training and {subset_size_val} for validation.")
     else:
         train_subset = train_dataset
         val_subset = val_dataset
+        test_subset = test_dataset
         logger.info("Using the entire dataset for training and validation.")
 
     # Create DataLoaders
@@ -103,6 +115,13 @@ def main(args):
 
     val_loader = DataLoader(
         val_subset, 
+        batch_size=1, 
+        shuffle=False, 
+        collate_fn=val_test_collate_fn_cropped
+    )
+
+    test_loader = DataLoader(
+        test_subset, 
         batch_size=1, 
         shuffle=False, 
         collate_fn=val_test_collate_fn_cropped
@@ -128,10 +147,11 @@ def main(args):
     logger.working_on("Visualizing predictions")
     visualize_predictions(
         model=model,
-        dataloader=val_loader,
+        dataloader=test_loader,
         use_nms=True,  # Set to False to display all proposals
         iou_threshold=args.iou_threshold,  # For NMS, overlapping boxes with 0.3 IoU will get filtered (the better one will stay)
-        num_images=args.num_images
+        num_images=args.num_images,
+        experiment_name=args.experiment_name
     )
 
         # Save the Trained Model
@@ -150,10 +170,26 @@ def main(args):
 
 
     # Evaluate the Model
-    logger.working_on("Evaluating model")
+    logger.working_on("Evaluating model on Validation split")
     ap, precision, recall = evaluate_model(
         model, 
         val_loader, 
+        split='val',
+        experiment_name=args.experiment_name, 
+        iou_threshold=args.iou_threshold, 
+        confidence_threshold=args.confidence_threshold
+    )
+
+    print(f"precision: {precision}")
+    print(f"recall: {recall}")
+    logger.info(f"Experiment {args.experiment_name} - mAP: {ap:.4f}")
+
+    # Evaluate the Model
+    logger.working_on("Evaluating model on Test split")
+    ap, precision, recall = evaluate_model(
+        model, 
+        test_loader, 
+        split='test',
         experiment_name=args.experiment_name, 
         iou_threshold=args.iou_threshold, 
         confidence_threshold=args.confidence_threshold
@@ -170,7 +206,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train and evaluate a two-headed ResNet model.")
 
     # Existing arguments
-    parser.add_argument('--experiment_name', type=str, default='experiment_1', help='Name of the experiment')
+    parser.add_argument('--experiment_name', type=str, default='experiment1', help='Name of the experiment')
     parser.add_argument('--num_images', type=int, default=5, help='Number of images to visualize')
     parser.add_argument('--learning_rate', type=float, default=1e-4, help='Learning rate for the optimizer')
     parser.add_argument('--num_epochs', type=int, default=4, help='Number of training epochs')

@@ -169,7 +169,7 @@ def visualize_proposal(image_proposal, target_proposal, box_thickness=1, figname
     plt.savefig(f"../figures/{figname}", bbox_inches='tight', dpi=300)
     plt.show()
 
-def visualize_predictions(model, dataloader, use_nms=True, iou_threshold=0.3, num_images=5):
+def visualize_predictions(model, dataloader, use_nms=True, iou_threshold=0.3, num_images=5, experiment_name='experiment'):
     model.eval()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.to(device)
@@ -243,4 +243,5 @@ def visualize_predictions(model, dataloader, use_nms=True, iou_threshold=0.3, nu
 
             # Save the figure
             nms = "true" if use_nms else "false"
-            plt.savefig(f"figures/predictions_image_{image_ids[0]}_nms_{nms}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"figures/png/predictions_image_{experiment_name}_{image_ids[0]}_nms_{nms}.png", bbox_inches='tight', dpi=300)
+            plt.savefig(f"figures/svg/predictions_image_{experiment_name}_{image_ids[0]}_nms_{nms}.svg", bbox_inches='tight', dpi=300)
