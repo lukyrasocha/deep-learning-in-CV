@@ -18,7 +18,7 @@ def starts(n):
 def train_model(
     model, train_loader, val_loader, criterion_cls, criterion_bbox,
     optimizer, num_epochs=1, iou_threshold=0.5, cls_weight=1, reg_weight=1, 
-    experiment_name="experiment"
+    experiment_name="experiment", patience=10, min_delta=1e-4
 ):
     
     wandb.init(
@@ -35,6 +35,11 @@ def train_model(
 
     train_losses = []
     val_losses = []
+
+    # Early stopping variables
+    best_val_loss = float("inf")
+    patience_counter = 0
+
 
     for epoch in range(num_epochs):
         # ------------------------
@@ -164,6 +169,12 @@ def train_model(
         avg_val_loss = avg_val_cls_loss + avg_val_bbox_loss
         val_losses.append(avg_val_loss)
 
+        # Early stopping check
+        if avg_val_loss < best_val_loss - min_delta:
+            best_val_loss = avg_val_loss
+            patience_counter = 0  # Reset counter if validation loss improves
+        else:
+            patience_counter += 1
 
         logger.info(
             f"Epoch {epoch + 1}/{num_epochs} - "
@@ -178,6 +189,11 @@ def train_model(
             "val/total_loss": avg_val_loss
         })
 
+        # Stop training if patience is exceeded
+        if patience_counter >= patience:
+            logger.info("Early stopping triggered.")
+            break
+
     wandb.finish()
 
 
@@ -186,19 +202,22 @@ def train_model(
     # ----------------------------
     # Save Precision-Recall curve with unique filename
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    figures_dir_png = f"figures/png/RCNN_train_val_loss_{experiment_name}_{timestamp}.png"
-    figures_dir_svg = f"figures/svg/RCNN_train_val_loss_{experiment_name}_{timestamp}.svg"
+    figures_dir_png = f"figures/png/RCNN_train_val_loss_{experiment_name}_{timestamp}"
+    figures_dir_svg = f"figures/svg/RCNN_train_val_loss_{experiment_name}_{timestamp}"
     os.makedirs(figures_dir_png, exist_ok=True)
     os.makedirs(figures_dir_svg, exist_ok=True)
 
+    # Dynamically determine the number of completed epochs
+    completed_epochs = len(train_losses)
+
     plt.figure(figsize=(10, 6))
-    
-    # Plot training loss in red
-    plt.plot(range(1, num_epochs + 1), train_losses, label='RCNN Train Loss', color='#990000', marker='o')
-    
-    # Plot validation loss in blue
-    plt.plot(range(1, num_epochs + 1), val_losses, label='RCNN Val Loss', color='#2F3EEA', marker='o')
-    
+
+    # Plot training loss
+    plt.plot(range(1, completed_epochs + 1), train_losses, label='RCNN Train Loss', color='#990000', marker='o')
+
+    # Plot validation loss
+    plt.plot(range(1, completed_epochs + 1), val_losses, label='RCNN Val Loss', color='#2F3EEA', marker='o')
+
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.title('Training and Validation Loss', fontsize=18, color='#990000')
@@ -210,8 +229,7 @@ def train_model(
     plt.savefig(os.path.join(figures_dir_svg, "loss_curve.svg"), format='svg', bbox_inches='tight')
 
 
-
-def evaluate_model(model, val_loader, iou_threshold=0.5, confidence_threshold=0.8, experiment_name="experiment"):
+def evaluate_model(model, val_loader, split="val", iou_threshold=0.5, confidence_threshold=0.8, experiment_name="experiment"):
     # Set model to evaluation mode
     model.eval()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -295,8 +313,8 @@ def evaluate_model(model, val_loader, iou_threshold=0.5, confidence_threshold=0.
 
     # Save Precision-Recall curve with unique filename
     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    pr_curve_filename_png = f"figures/png/precision_recall_curve_{experiment_name}_{timestamp}.png"
-    pr_curve_filename_svg = f"figures/svg/precision_recall_curve_{experiment_name}_{timestamp}.svg"
+    pr_curve_filename_png = f"figures/png/precision_recall_curve_{split}_{experiment_name}_{timestamp}.png"
+    pr_curve_filename_svg = f"figures/svg/precision_recall_curve_{split}_{experiment_name}_{timestamp}.svg"
     # Ensure directories exist
     os.makedirs("figures/png", exist_ok=True)
     os.makedirs("figures/svg", exist_ok=True)
