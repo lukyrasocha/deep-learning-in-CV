@@ -1,14 +1,37 @@
+import datetime
+import numpy as np
 import torch
 from utils.logger import logger
 from torchvision.ops import box_iou
 import matplotlib.pyplot as plt
 import os
+from utils.metrics import non_max_suppression
+from utils.metrics import calculate_precision_recall, calculate_mAP, non_max_suppression
+from torchvision.transforms import ToTensor
+import wandb
 
+
+# for debugging
+def starts(n):
+    print("*"*n)
 
 def train_model(
     model, train_loader, val_loader, criterion_cls, criterion_bbox,
-    optimizer, num_epochs=1, iou_threshold=0.5, cls_weight=1, reg_weight=1
+    optimizer, num_epochs=1, iou_threshold=0.5, cls_weight=1, reg_weight=1, 
+    experiment_name="experiment"
 ):
+    
+    wandb.init(
+        project="object_detection",  # Set your W&B project name
+        name=experiment_name,        # Name of the experiment
+        config={                     # Log hyperparameters
+            "num_epochs": num_epochs,
+            "iou_threshold": iou_threshold,
+            "cls_weight": cls_weight,
+            "reg_weight": reg_weight,
+            "learning_rate": optimizer.param_groups[0]['lr']
+        }
+    )    
 
     train_losses = []
     val_losses = []
@@ -58,6 +81,8 @@ def train_model(
                 loss_bbox = torch.tensor(0.0).cuda()
 
             bbox_running_loss += reg_weight * loss_bbox.item()
+            #print(f"Targets_cls: {targets_cls}")
+            #print(f"Number of positive samples: {(targets_cls == 1).sum()}")
 
             # Combine Losses
             loss = cls_weight * loss_cls + reg_weight * loss_bbox
@@ -69,6 +94,16 @@ def train_model(
         avg_train_bbox_loss = bbox_running_loss / len(train_loader)
         avg_train_loss = running_loss / len(train_loader)
         train_losses.append(avg_train_loss)
+
+                # Log training metrics to W&B
+        wandb.log({
+            "train/cls_loss": avg_train_cls_loss,
+            "train/bbox_loss": avg_train_bbox_loss,
+            "train/total_loss": avg_train_loss,
+            "epoch": epoch + 1
+        })
+        
+
 
         # ------------------------
         # Validation Phase
@@ -135,11 +170,25 @@ def train_model(
             f"Train Loss: {avg_train_loss:.4f} (Cls: {avg_train_cls_loss:.4f}, Reg: {avg_train_bbox_loss:.4f}) - "
             f"Val Loss: {avg_val_loss:.4f} (Cls: {avg_val_cls_loss:.4f}, Reg: {avg_val_bbox_loss:.4f})"
         )
-    # ------------------------
+
+                # Log validation metrics to W&B
+        wandb.log({
+            "val/cls_loss": avg_val_cls_loss,
+            "val/bbox_loss": avg_val_bbox_loss,
+            "val/total_loss": avg_val_loss,
+            "epoch": epoch + 1
+        })
+
+    wandb.finish()
+
+
+        # ------------------------
     # Plot and Save Loss Curves
-    # ------------------------
-    figures_dir_png = "figures/png"
-    figures_dir_svg = "figures/svg"
+    # ----------------------------
+    # Save Precision-Recall curve with unique filename
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    figures_dir_png = f"figures/png/RCNN_train_val_loss_{experiment_name}_{timestamp}.png"
+    figures_dir_svg = f"figures/svg/RCNN_train_val_loss_{experiment_name}_{timestamp}.svg"
     os.makedirs(figures_dir_png, exist_ok=True)
     os.makedirs(figures_dir_svg, exist_ok=True)
 
@@ -160,3 +209,108 @@ def train_model(
     # Save plots
     plt.savefig(os.path.join(figures_dir_png, "loss_curve.png"), dpi=300, bbox_inches='tight')
     plt.savefig(os.path.join(figures_dir_svg, "loss_curve.svg"), format='svg', bbox_inches='tight')
+
+
+
+def evaluate_model(model, val_loader, iou_threshold=0.5, confidence_threshold=0.8, experiment_name="experiment"):
+    # Set model to evaluation mode
+    model.eval()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+
+    # Lists to store per-image ground truths and predictions
+    ground_truths = []  # List[List[Dict]]
+    predictions = []    # List[List[Dict]]
+
+    with torch.no_grad():
+        for images, proposal_images_list, coords, image_ids, ground_truths_batch in val_loader:
+            batch_size = len(image_ids)
+            # For each image in the batch
+            for idx in range(batch_size):
+                image_id = image_ids[idx]
+                # Process ground truths for this image
+                gt_boxes = []
+                for gt in ground_truths_batch[idx]:
+                    xmin = gt.get('xmin').item()
+                    ymin = gt.get('ymin').item()
+                    xmax = gt.get('xmax').item()
+                    ymax = gt.get('ymax').item()
+                    gt_boxes.append({
+                        'xmin': xmin,
+                        'ymin': ymin,
+                        'xmax': xmax,
+                        'ymax': ymax
+                    })
+                ground_truths.append(gt_boxes)
+                
+                # Get proposals for the image
+                proposal_images = torch.stack(proposal_images_list[idx]).to(device)
+                outputs_cls, outputs_bbox_transforms = model(proposal_images)
+
+                # Convert outputs to CPU numpy arrays
+                outputs_cls = outputs_cls.detach().cpu()
+                outputs_bbox_transforms = outputs_bbox_transforms.detach().cpu()
+
+                # Process outputs 
+                scores = torch.softmax(outputs_cls, dim=1)[:, 1]  # Get pothole scores
+                boxes = coords[idx]  # coords for this image
+                # After computing scores in evaluate_model
+                print(f"Scores before thresholding: {scores}")
+
+
+                # Filter out low-confidence proposals
+                mask = scores >= confidence_threshold
+                scores = scores[mask]
+                boxes = [boxes[i] for i in range(len(boxes)) if mask[i]]
+                print(f"Number of scores before thresholding: {len(scores)}")
+
+                if len(scores) == 0:
+                    predictions.append([])  # No predictions for this image
+                    continue
+
+                # Prepare predictions for this image
+                pred_boxes = []
+                for i in range(len(scores)):
+                    pred_boxes.append({
+                        'pre_class': float(scores[i]),
+                        'pre_bbox_xmin': float(boxes[i]['xmin']),
+                        'pre_bbox_ymin': float(boxes[i]['ymin']),
+                        'pre_bbox_xmax': float(boxes[i]['xmax']),
+                        'pre_bbox_ymax': float(boxes[i]['ymax']),
+                    })
+                # Apply NMS using your provided function
+                nms_results = non_max_suppression(pred_boxes, iou_threshold=iou_threshold)
+
+                predictions.append(nms_results)
+
+    # After processing all batches
+    # Now calculate precision and recall
+    precision_values, recall_values = calculate_precision_recall(ground_truths, predictions, iou_threshold)
+
+    # Calculate mAP
+    mAP = calculate_mAP(precision_values, recall_values)
+
+    # Convert precision and recall lists to numpy arrays for plotting
+    precision = np.array(precision_values)
+    recall = np.array(recall_values)
+
+    # Save Precision-Recall curve with unique filename
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    pr_curve_filename_png = f"figures/png/precision_recall_curve_{experiment_name}_{timestamp}.png"
+    pr_curve_filename_svg = f"figures/svg/precision_recall_curve_{experiment_name}_{timestamp}.svg"
+    # Ensure directories exist
+    os.makedirs("figures/png", exist_ok=True)
+    os.makedirs("figures/svg", exist_ok=True)
+    plt.figure()
+    plt.plot(recall, precision, marker='.')
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title(f'Precision-Recall Curve: {experiment_name}')
+    plt.grid(True)
+    plt.savefig(pr_curve_filename_png, dpi=300, bbox_inches='tight')
+    plt.savefig(pr_curve_filename_svg, format='svg', bbox_inches='tight')
+    plt.close()
+    
+    logger.info(f"Precision-Recall curve saved as {pr_curve_filename_png} and {pr_curve_filename_svg}")
+
+    return mAP, precision, recall
