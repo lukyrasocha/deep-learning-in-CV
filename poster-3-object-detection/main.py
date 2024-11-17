@@ -137,7 +137,7 @@ def main(args):
     train_model(
         model, train_loader, val_loader, criterion_cls, criterion_bbox, optimizer, 
         num_epochs=args.num_epochs, 
-        iou_threshold=args.iou_threshold, 
+        iou_threshold=args.confidence_threshold, 
         cls_weight=args.cls_weight, 
         reg_weight=args.reg_weight, 
         experiment_name=args.experiment_name
