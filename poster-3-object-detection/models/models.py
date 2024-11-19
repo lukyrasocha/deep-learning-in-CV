@@ -42,13 +42,17 @@ class ResNetTwoHeads_old(nn.Module):
 
 
 class ResNetTwoHeads(nn.Module):
-    def __init__(self, num_classes=2, dropout_rate=0.5):
+    def __init__(self, num_classes=2, dropout_rate=0.6):
         super(ResNetTwoHeads, self).__init__()
 
         # Backbone: Pretrained ResNet
         self.backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
         num_features = self.backbone.fc.in_features
         self.backbone.fc = nn.Identity()  # Remove the original fully connected layer
+
+        # Freeze the backbone parameters
+        for param in self.backbone.parameters():
+            param.requires_grad = False
 
         # Shared fully connected layer
         self.shared_fc = nn.Sequential(
@@ -58,17 +62,23 @@ class ResNetTwoHeads(nn.Module):
             nn.Dropout(dropout_rate)
         )
 
-        # Classification head (pothole vs. background)
+        # Classification head (pothole vs. background) with 2 additional layers
         self.classifier = nn.Sequential(
-            nn.Linear(4096, 256),
+            nn.Linear(4096, 512),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
             nn.Linear(256, num_classes)  # 2 classes: object and background
         )
 
-        # Regression head for bbox transformations (tx, ty, tw, th)
+        # Regression head for bbox transformations (tx, ty, tw, th) with 2 additional layers
         self.regressor = nn.Sequential(
-            nn.Linear(4096, 256),
+            nn.Linear(4096, 512),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(dropout_rate),
             nn.Linear(256, 4)  # 4 values: tx, ty, tw, th

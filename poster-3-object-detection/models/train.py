@@ -231,6 +231,10 @@ def train_model(
 
 def evaluate_model(model, val_loader, split="val", iou_threshold=0.5, confidence_threshold=0.8, experiment_name="experiment"):
     # Set model to evaluation mode
+
+    # Define custom colors
+    color_primary = '#990000'  # University red
+    color_secondary = '#2F3EEA'  # University blue
     model.eval()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -262,6 +266,7 @@ def evaluate_model(model, val_loader, split="val", iou_threshold=0.5, confidence
                 
                 # Get proposals for the image
                 proposal_images = torch.stack(proposal_images_list[idx]).to(device)
+
                 outputs_cls, outputs_bbox_transforms = model(proposal_images)
 
                 # Convert outputs to CPU numpy arrays
@@ -322,16 +327,30 @@ def evaluate_model(model, val_loader, split="val", iou_threshold=0.5, confidence
     # Ensure directories exist
     os.makedirs("figures/png", exist_ok=True)
     os.makedirs("figures/svg", exist_ok=True)
-    plt.figure()
-    plt.plot(recall, precision, marker='.')
-    plt.xlabel('Recall')
-    plt.ylabel('Precision')
-    plt.title(f'Precision-Recall Curve: {experiment_name}')
-    plt.grid(True)
+
+       # Plot Precision-Recall Curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(
+        recall, precision, 
+        color=color_primary, 
+        marker='o', 
+        linestyle='-', 
+        linewidth=2, 
+        markersize=5, 
+        label=r'\textbf{Precision-Recall Curve}'
+    )
+    plt.xlabel('Recall', fontsize=16, labelpad=10, color='black')  # Black text for labels
+    plt.ylabel('Precision', fontsize=16, labelpad=10, color='black')  # Black text for labels
+    plt.title(r'\textbf{Precision-Recall Curve}', fontsize=18, pad=15, color=color_primary)
+    plt.legend(loc='best', fontsize=16, title_fontsize=18, frameon=True)  # Larger legend
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7, color='gray')
+    plt.tight_layout()
+
+    # Save figures
     plt.savefig(pr_curve_filename_png, dpi=300, bbox_inches='tight')
     plt.savefig(pr_curve_filename_svg, format='svg', bbox_inches='tight')
-    plt.close()
-    
+    plt.close() 
+
     logger.info(f"Precision-Recall curve saved as {pr_curve_filename_png} and {pr_curve_filename_svg}")
 
     return mAP, precision, recall
