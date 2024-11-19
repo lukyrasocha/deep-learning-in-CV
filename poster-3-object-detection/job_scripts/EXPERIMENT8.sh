@@ -2,24 +2,23 @@
 #BSUB -q c02516
 #BSUB -n 4
 #BSUB -gpu "num=1:mode=exclusive_process" 
-#BSUB -J REG_1_CLF_1_iou
+#BSUB -J REG_10_CLF_1_iou
 #BSUB -R "span[hosts=1]"
 #BSUB -R "rusage[mem=20GB]"
 #BSUB -W 12:00
-#BSUB -o job_outputs/REG_1_CLF_1_iou%J.out
-#BSUB -e job_outputs/REG_1_CLF_1_iou%J.err
+#BSUB -o job_outputs/REG_10_CLF_1_iou%J.out
+#BSUB -e job_outputs/REG_10_CLF_1_iou%J.err
 
-EXPERIMENT="EXPERIMENT5Reg1lowIoU"
+EXPERIMENT="EXPERIMENT8Reg10IoU"
 EPOCHS=50
 LEARNING_RATE=1e-4
-IOU_THRESHOLD=0.05
+IOU_THRESHOLD=0.1
 CONFIDENCE_THRESHOLD=0.5
 WEIGHT_DECAY=1e-5
 NUM_IMAGES=10
 
-source /dtu/blackhole/0a/203690/miniconda3/bin/activate
-
-conda activate project-3
+source ~/venv/project3_venv/bin/activate
+#conda activate project-3
 
 python main.py \
     --experiment_name $EXPERIMENT \
@@ -30,4 +29,4 @@ python main.py \
     --confidence_threshold $CONFIDENCE_THRESHOLD \
     --weight_decay $WEIGHT_DECAY \
     --cls_weight 1.0 \
-    --reg_weight 1.0
+    --reg_weight 10.0

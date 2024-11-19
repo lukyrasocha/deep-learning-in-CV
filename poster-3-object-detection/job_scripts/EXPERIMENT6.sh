@@ -17,8 +17,9 @@ CONFIDENCE_THRESHOLD=0.5
 WEIGHT_DECAY=1e-5
 NUM_IMAGES=10
 
-source ~/venv/project3_venv/bin/activate
-#conda activate project-3
+source /dtu/blackhole/0a/203690/miniconda3/bin/activate
+
+conda activate project-3
 
 python main.py \
     --experiment_name $EXPERIMENT \
