@@ -1,4 +1,4 @@
-# Project 2: Segmentation :camera:
+# Project 3: Object detection :camera:
 
 This project is about object detection. The dataset for this project is called Potholes and consist of images of holes in roads. The task is therefore to detect and locate these holes.
 

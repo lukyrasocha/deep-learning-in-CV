@@ -6,6 +6,4 @@ This repository contains the code for all the projects done as part of the cours
 
 [**Project 2:**](https://github.com/lukyrasocha/02516-intro-to-dl-in-cv/tree/main/poster-2-segmentation) Image segmentation of retinal images and skin lesions 👁️
 
-**Project 3:**
-
-**Project 4:**
+[**Project 3:**](https://github.com/lukyrasocha/02516-intro-to-dl-in-cv/tree/main/poster-3-object-detection) Object detection of potholes in roads 🛣️

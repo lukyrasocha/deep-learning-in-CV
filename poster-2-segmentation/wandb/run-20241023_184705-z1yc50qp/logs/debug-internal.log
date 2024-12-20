@@ -1,0 +1,17 @@
+{"time":"2024-10-23T18:47:05.131776227+02:00","level":"INFO","msg":"using version","core version":"0.18.5"}
+{"time":"2024-10-23T18:47:05.131787066+02:00","level":"INFO","msg":"created symlink","path":"/zhome/c4/8/214730/02516-intro-to-dl-in-cv/poster-2-segmentation/02516-intro-to-dl-in-cv/poster-2-segmentation/wandb/run-20241023_184705-z1yc50qp/logs/debug-core.log"}
+{"time":"2024-10-23T18:47:05.243877983+02:00","level":"INFO","msg":"created new stream","id":"z1yc50qp"}
+{"time":"2024-10-23T18:47:05.243932233+02:00","level":"INFO","msg":"stream: started","id":"z1yc50qp"}
+{"time":"2024-10-23T18:47:05.243945584+02:00","level":"INFO","msg":"writer: Do: started","stream_id":{"value":"z1yc50qp"}}
+{"time":"2024-10-23T18:47:05.243965332+02:00","level":"INFO","msg":"sender: started","stream_id":"z1yc50qp"}
+{"time":"2024-10-23T18:47:05.243982353+02:00","level":"INFO","msg":"handler: started","stream_id":{"value":"z1yc50qp"}}
+{"time":"2024-10-23T18:47:05.517713868+02:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2024-10-23T18:47:11.380095014+02:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2024-10-23T18:47:11.380804246+02:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2024-10-23T18:47:12.088615743+02:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2024-10-23T18:47:12.380709635+02:00","level":"INFO","msg":"handler: operation stats","stats":{"operations":[{"desc":"uploading history, summary, console logs","runtime_seconds":0.291976592}],"total_operations":1}}
+{"time":"2024-10-23T18:47:13.446692439+02:00","level":"INFO","msg":"stream: closing","id":"z1yc50qp"}
+{"time":"2024-10-23T18:47:13.446853686+02:00","level":"INFO","msg":"handler: closed","stream_id":{"value":"z1yc50qp"}}
+{"time":"2024-10-23T18:47:13.446873688+02:00","level":"INFO","msg":"writer: Close: closed","stream_id":{"value":"z1yc50qp"}}
+{"time":"2024-10-23T18:47:13.446891752+02:00","level":"INFO","msg":"sender: closed","stream_id":"z1yc50qp"}
+{"time":"2024-10-23T18:47:13.460785437+02:00","level":"INFO","msg":"stream: closed","id":"z1yc50qp"}

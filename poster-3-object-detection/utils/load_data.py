@@ -4,313 +4,445 @@ import time
 import torch
 import json
 import xml.etree.ElementTree as ET
+import random
+import pickle as pk
+import numpy as np
+import matplotlib.pyplot as plt
 
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
-from visualize import visualize_samples
 from tensordict import TensorDict
-from torch.utils.data import default_collate
+from utils.selective_search import generate_proposals_for_test_and_val
 
+def collate_fn(batch):
+    images = [img for proposal_images in batch for img in proposal_images[0]]
+    targets = [tgt for proposal_targets in batch for tgt in proposal_targets[1]]
+    indices = [idx for _, _, idx in batch]
 
-class Potholes(Dataset):
-    """
-    A PyTorch Dataset class for loading images and annotations of potholes.
+    return torch.stack(images), targets, indices
 
-    Attributes:
-        folder_path (str): Path to the dataset folder with the splits.json file, annotated-images folder and README.md.
-        transform (callable, optional): Optional transform to be applied on a sample.
-        image_paths (list): List of file paths for images.
-        xml_paths (list): List of file paths for corresponding XML annotation files.
-
-    Parameters:
-        split (str): The dataset split to use ('train', 'val', or 'test'). Defaults to 'train'.
-        val_percent (int, optional): The proportion of training data to use for validation.
-                                        If provided, the dataset will split the training data.
-        seed (int): Seed for random shuffling of the training data. Defaults to 42.
-        transform (callable, optional): A function/transform to apply to the images.
-
-    Raises:
-        FileNotFoundError: If the specified folder path does not exist.
-        AssertionError: If the number of image paths does not match the number of XML paths.
-
-    Methods:
-        __len__(): Returns the total number of samples in the dataset.
-        __getitem__(idx): Retrieves a sample (image and targets) from the dataset at the given index.
-    """
-
-    def __init__(self, split='train', val_percent=None, seed=42, transform=None, folder_path='Potholes'):
-        # Ensure the dataset is accessed from the root of the repository
-        base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-        self.folder_path = os.path.join(base_path, folder_path)
+class Trainingset(Dataset):
+    def __init__(self, image_dir, target_dir, transform=None):
+        self.image_files = sorted(glob.glob(os.path.join(image_dir, 'train_image_*.pkl')))
+        self.target_files = sorted(glob.glob(os.path.join(target_dir, 'train_target_*.pkl')))
         self.transform = transform
 
-        # Check if the folder path exists
-        if not os.path.exists(self.folder_path):
-            print("Looking for files in:", self.folder_path)
-            raise FileNotFoundError(f"Directory not found: {self.folder_path}")
-
-        # Load the splits from the JSON file
-        json_path = os.path.join(self.folder_path, "splits.json")
-        with open(json_path, 'r') as file:
-            splits = json.load(file)
-
-        #If the validation percentage for the split is set, it will create a validation set based on the existing training set
-        if val_percent is not None:
-
-            #Get all the training files and shuffel them
-            train_files = splits['train']
-            random.seed(seed)
-            random.shuffle(train_files)  
-
-            # Calculate the number of validation samples
-            val_count = int(len(train_files) * val_percent)
-            new_val_files = train_files[:val_count]
-            new_train_files = train_files[val_count:]
-
-            # Set the paths based on the wanted splits
-            # In the code below we use the replace to replace '.xml' with '.jpg' because the files in the given json only consist of '.xml' files.
-            # This is used to get the path for both the '.xml' and '.jpg' files
-            if split.lower() == 'train':
-                self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in new_train_files]
-                self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in new_train_files]
-            elif split.lower() == 'val':
-                self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in new_val_files]
-                self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in new_val_files]
-            elif split.lower() == 'test':
-                self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['test']]
-                self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in splits['test']]
-        else:
-            # Use the original splits if val_percent is not provided
-            if split.lower() == 'train':
-                self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['train']]
-                self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in splits['train']]
-            elif split.lower() == 'test':
-                self.image_paths = [os.path.join(self.folder_path, "annotated-images", file.replace('.xml', '.jpg')) for file in splits['test']]
-                self.xml_paths = [os.path.join(self.folder_path, "annotated-images", file) for file in splits['test']]
-
-        assert len(self.image_paths) == len(self.xml_paths), 'Number of images and xml files does not match'
-
+        assert len(self.image_files) == len(self.target_files), "Number of images and targets must be the same."
 
     def __len__(self):
-        """Returns the total number of samples in the dataset."""
+        return len(self.image_files)
+
+    def __getitem__(self, idx):
+        # Load the image proposals from the pickle file
+        with open(self.image_files[idx], 'rb') as img_f:
+            proposal_images = pk.load(img_f)
+
+        # Load the corresponding target proposals from the pickle file
+        with open(self.target_files[idx], 'rb') as tgt_f:
+            proposal_targets = pk.load(tgt_f)
+
+        # Apply the transformation, if any, to each proposal image
+        if self.transform:
+            proposal_images = [self.transform(img) if isinstance(img, Image.Image) else img for img in proposal_images]
+
+        return proposal_images, proposal_targets, idx  
+    
+        
+def load_proposal_data(files, orig_data_path, proposal_dir, split):
+    image_paths = []
+    proposal_coords = []
+    image_ids = []
+    ground_truths = []
+
+    for file in files:
+        image_id = file
+
+        image_path = os.path.join(orig_data_path, "annotated-images", f"img-{image_id}.jpg")
+
+        # Set paths for proposals and ground truths based on split
+        proposal_pickle_path = os.path.join(proposal_dir, f'{split}_target_img-{image_id}.pkl')
+        ground_truth_path = os.path.join(proposal_dir, f'img-{image_id}_gt.pkl')
+
+        if not os.path.exists(proposal_pickle_path):
+            print(f"File not found: {proposal_pickle_path}")
+            continue
+        if not os.path.exists(ground_truth_path):
+            print(f"Ground truth file not found: {ground_truth_path}")
+            continue
+
+        try:
+            # Load proposals
+            with open(proposal_pickle_path, 'rb') as f:
+                proposal_data = pk.load(f)
+
+            if isinstance(proposal_data, tuple) and len(proposal_data) >= 2:
+                proposal_targets = proposal_data[1]
+            else:
+                print(f"Unexpected data format in {proposal_pickle_path}")
+                continue
+
+            if not proposal_targets:
+                print(f"No proposals found for image {image_id}")
+                continue
+
+            # Load ground truth data
+            with open(ground_truth_path, 'rb') as f:
+                ground_truth = pk.load(f)
+
+            coords = []
+            for target in proposal_targets:
+                if target is None:
+                    continue
+                try:
+                    x_min = int(target['image_xmin'])
+                    y_min = int(target['image_ymin'])
+                    x_max = int(target['image_xmax'])
+                    y_max = int(target['image_ymax'])
+
+                    if x_max > x_min and y_max > y_min:
+                        coords.append(TensorDict({
+                            'xmin': torch.tensor(x_min, dtype=torch.float32),
+                            'ymin': torch.tensor(y_min, dtype=torch.float32),
+                            'xmax': torch.tensor(x_max, dtype=torch.float32),
+                            'ymax': torch.tensor(y_max, dtype=torch.float32),
+                            'original_image_name': image_id
+                        }))
+                except KeyError as e:
+                    print(f"KeyError: {e} in target {target}")
+                    continue
+
+            if coords:
+                image_paths.append(image_path)
+                proposal_coords.append(coords)
+                image_ids.append(image_id)
+                ground_truths.append(ground_truth)
+            else:
+                print(f"No valid coordinates for image {image_id}")
+
+        except Exception as e:
+            print(f"Error loading proposals for image {image_id}: {e}")
+
+    return image_paths, proposal_coords, image_ids, ground_truths
+
+
+class ValAndTestDataset(Dataset):
+    def __init__(self, base_dir, split='val', transform=None, orig_data_path='Potholes'):
+        self.transform = transform
+        self.split = split.lower()
+
+        assert split in ["val", "test"], "Split must be either 'val' or 'test'"
+        self.proposal_dir = os.path.join(base_dir, f'{self.split}_data', 'targets')
+
+        if not os.path.exists(self.proposal_dir):
+            raise FileNotFoundError(f"Directory not found: {self.proposal_dir}")
+
+        proposal_files = glob.glob(os.path.join(self.proposal_dir, f'{self.split}_target_img-*.pkl'))
+        self.files = [os.path.basename(file).replace(f'{self.split}_target_img-', '').replace('.pkl', '') for file in proposal_files]
+
+
+        self.image_paths, self.proposal_coords, self.image_ids, self.ground_truths = load_proposal_data(
+            self.files, orig_data_path, self.proposal_dir, split=split
+        )
+
+    def __len__(self):
         return len(self.image_paths)
 
     def __getitem__(self, idx):
-        """Retrieves a sample (image and targets) from the dataset at the given index.
+        image_path = self.image_paths[idx]
+        coords = self.proposal_coords[idx]
+        ground_truth = self.ground_truths[idx]
 
-        Args:
-            idx (int): The index of the sample to retrieve.
+        with Image.open(image_path) as img:
+            original_image = img.convert('RGB')
 
-        Returns:
-            tuple: A tuple containing:
-                - image (Tensor): The image tensor after applying the transformations.
-                - targets (list): A list of TensorDict objects containing bounding box coordinates and labels.
-        """
+        cropped_proposals_images = []
+        for coord in coords:
+            x_min = int(coord['xmin'])
+            y_min = int(coord['ymin'])
+            x_max = int(coord['xmax'])
+            y_max = int(coord['ymax'])
+            proposal_image = original_image.crop((x_min, y_min, x_max, y_max))
 
-        # Load the image and convert to RGB
-        image = Image.open(self.image_paths[idx]).convert('RGB')
-        original_width, original_height = image.size
-
-        # Load and parse the XML annotation
-        xml_path = self.xml_paths[idx]
-        tree = ET.parse(xml_path)
-        root = tree.getroot()
-
-        # Initialize lists for the target
-        targets = []
-
-        # The code below convert the image to a tensor
-        # If a transform is set, then it will calculate 
-        if self.transform:
-            image = self.transform(image)
-            new_height, new_width = image.shape[1], image.shape[2]
-        else:
-            image = transform.ToTensor(image)
-
-        # Iterate through each object in the XML file
-        for obj in root.findall('object'):
-        
-            #If the box is a pothole the label is 1 (True)
-            if obj.find('name').text == 'pothole':
-                label = 1
-            else:
-                label = 0
-
-            # Extract bounding box coordinates
-            bndbox = obj.find('bndbox')
-            xmin = int(bndbox.find('xmin').text)
-            ymin = int(bndbox.find('ymin').text)
-            xmax = int(bndbox.find('xmax').text)
-            ymax = int(bndbox.find('ymax').text)
-
-            # Apply transformations and reshape so the boxes match to the new size
             if self.transform:
-                xmin *= new_width / original_width
-                xmax *= new_width / original_width
-                ymin *= new_height / original_height
-                ymax *= new_height / original_height
+                proposal_image = self.transform(proposal_image)
+
+            cropped_proposals_images.append(proposal_image)
+
+        return original_image, cropped_proposals_images, coords, self.image_ids[idx], ground_truth
 
 
-            # Append bounding box and label. TensorDict is used to convert the dictorary to a tensor
-            directory = TensorDict({
-                'xmin'  : torch.tensor(xmin, dtype=torch.float32, device=device),
-                'ymin'  : torch.tensor(ymin, dtype=torch.float32, device=device),
-                'xmax'  : torch.tensor(xmax, dtype=torch.float32, device=device),
-                'ymax'  : torch.tensor(ymax, dtype=torch.float32, device=device),
-                'labels': torch.tensor(label, dtype=torch.int64, device=device)
-            })
+def val_test_collate_fn_cropped(batch):
+    batch_original_images = []
+    batch_proposal_images = []
+    batch_coords = []
+    batch_image_ids = []
+    batch_ground_truths = []
 
-            targets.append(directory)
-        return image, targets
+    for original_image, proposal_images, coords, image_id, ground_truth in batch:
+        batch_original_images.append(original_image)
+        batch_proposal_images.append(proposal_images)
+        batch_coords.append(coords)
+        batch_image_ids.append(image_id)
+        batch_ground_truths.append(ground_truth)
 
+    return batch_original_images, batch_proposal_images, batch_coords, batch_image_ids, batch_ground_truths
+def get_xml_data(xml_path):
+    
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
 
-def load_data(self, val_percent=None, seed=42, transform=None, folder_path='Potholes'):
-    """
-    Loads the Potholes dataset for training, validation, and testing.
-
-    Parameters:
-        val_percent (int, optional): The proportion of the training data to use for validation.
-                                        If provided, the training set will be split accordingly.
-        seed (int): Seed for random shuffling of the training data. Defaults to 42.
-        transform (callable, optional): A function/transform to apply to the images.
-        folder_path (str): Relative path to the folder containing the dataset. Defaults to 'Potholes'.
-
-    Returns:
-        tuple: A tuple containing three elements:
-            - train_data (Potholes): The dataset for training.
-            - val_data (Potholes): The dataset for validation.
-            - test_data (Potholes): The dataset for testing.
-    """
-    train_data = Potholes(split='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-    val_data = Potholes(val='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-    test_data = Potholes(test='train', val_percent=val_percent, seed=seed, transform=transform, folder_path=folder_path)
-
-    return train_data, val_data, test_data
-
-def custom_collate_fn(batch):
-    """
-    Custom collate function for a PyTorch DataLoader, used to process a batch of data 
-    where each sample contains an image and its corresponding targets.
-    It is needed because the deafult collate function expect dimensions of same size
-
-    Parameters:
-        batch (list of tuples): A list where each element is a tuple (image, target).
-            - image: A tensor representing the image.
-            - target: A list or dictionary containing the bounding box coordinates 
-                      and labels for objects detected in the image.
-
-    Returns:
-        tuple: A tuple containing:
-            - images (Tensor): A stacked tensor of images with shape 
-              (batch_size, channels, height, width), created using PyTorch's `default_collate`.
-            - targets (list): A list of original target annotations, one for each image.
-    """
-
-    images = []
+    # Initialize lists for the target
     targets = []
 
-    for image, target in batch:
-        images.append(image)  # Append the image part to the images list
-        targets.append(target)  # Append the target part to the targets list
-
-    return default_collate(images), targets  # Return stacked images and original targets
-
-
-if __name__ == "__main__":
-
-    # Define any transforms
-    transform = transforms.Compose([
-        transforms.Resize((256, 256)),
-        transforms.ToTensor(),
-    ])
-    device = 'cpu'
-    # Initialize the dataset and dataloader
-    potholes_dataset = Potholes(split = 'Train', transform=transform, folder_path='Potholes')
-    dataloader = DataLoader(potholes_dataset, batch_size=32, shuffle=True, num_workers=8, collate_fn=custom_collate_fn)
-
-    print("\nNumber of samples in the dataset:", len(potholes_dataset))
-    print("Number of batches in the dataloader:", len(dataloader))
-
-    #Check the get item method
-    sample_image, sample_targets = potholes_dataset[0]  
-    print("\nSample Image Type:", type(sample_image))
-    print("Image in on the following device (-1 = cpu) and (0 = cuda):", sample_image.get_device())
-    print("Sample Targets Type:", type(sample_targets))
+    # Iterate through each object in the XML file
+    for obj in root.findall('object'):
     
-    # Check the type of individual targets
-    target = sample_targets[0]
-    print("\nType of individual target:", type(target))
-    print("Type of xmin:", type(target['xmin']))
-    print("Type of labels:", type(target['labels']))
-  
-    #Check the dataloader
-    data_iter = iter(dataloader)
-    batch_images, batch_targets = next(data_iter)
+        # If the box is a pothole the label is 1 (True)
+        if obj.find('name').text == 'pothole':
+            label = 1
+        else:
+            label = 0
 
-    #When all the data is loaded we can insert it to the GPU if it is available
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print('You are using:', device)
-    batch_images = batch_images[0].to(device)        #Check to ensure the data can be send to the cuda:0 
-    targets = batch_targets[0]
-    box = targets[0].to(device)
+        # Extract bounding box coordinates
+        bndbox = obj.find('bndbox')
+        xmin = int(bndbox.find('xmin').text)
+        ymin = int(bndbox.find('ymin').text)
+        xmax = int(bndbox.find('xmax').text)
+        ymax = int(bndbox.find('ymax').text)
 
-    print("\nSingle Batch:")
-    print("The batch is on the")
-    print("Image batch in on the following device (-1 = cpu) and (0 = cuda):", len(batch_targets)) 
-    print("Image batch shape:", batch_images.shape) 
+        # Append bounding box and label. TensorDict is used to convert the dictionary to a tensor
+        directory = TensorDict({
+            'xmin'  : torch.tensor(xmin, dtype=torch.float32),
+            'ymin'  : torch.tensor(ymin, dtype=torch.float32),
+            'xmax'  : torch.tensor(xmax, dtype=torch.float32),
+            'ymax'  : torch.tensor(ymax, dtype=torch.float32),
+            'labels': torch.tensor(label, dtype=torch.int64)
+        })
 
-    # Print the target from the dataloader
-    # Batch_target is all the targets in the batch whereas targets is for 1 image (the boxes on the image). Box is therefore one of the boxes on the image (targets)
-    print(f'\nPrint the box:\n {box}')
-    print("Type:", type(box))
-
-    print("\nBounding box coordinates:", box['xmin'], box['ymin'], box['xmax'], box['ymax'])
-    print("Label:", box['labels'])
-
-    #The following code is used to show that the output from costum_collate_fn works
-    device = 'cpu'
-    for batch_images, batch_targets in dataloader:
-        print("Batch images shape:", batch_images.shape)  # Should print: (2, 3, 256, 256)
-        print("Batch targets:", batch_targets)
-        print("\nTargets for each image in the batch:")
-
-        # Iterate through the targets to show correspondence with images
-        for i, targets in enumerate(batch_targets):
-            print(f"Image {i} has {len(targets)} target(s):")
-            for target in targets:
-                print(f"  Bounding box: {target['xmin']:.3g}, {target['ymin']:.3g}, {target['xmax']:.3g}, {target['ymax']:.3g}, Label: {target['labels']}")
-            if i >= 5:
-                break # only show 5 images
-        break         # Only show one batch
-
-
-###############################################################
-    #Function to benchmark the dataloader
-
-    #def benchmark_dataloader(dataloader, num_batches=100):
-    #    start_time = time.time()
-    #    for i, (images, targets) in enumerate(dataloader):
-    #        if i >= num_batches:
-    #            break
-    #    end_time = time.time()
-    #    return end_time - start_time
-    ##Test for optimal num of workers in DataLoader
-    #
-    ## BEST IN NUM_WORKERS = 4
-    #batch_size = 32
-    #num_workers_list = [0, 2, 4, 8, 16, 32, 64]
-    #
-    #for num_workers in num_workers_list:
-    #    dataloader = DataLoader(
-    #        potholes_dataset,
-    #        batch_size=batch_size,
-    #        shuffle=True,
-    #        num_workers=num_workers,
-    #        collate_fn=collate_fn,
-    #    )
-    #    duration = benchmark_dataloader(dataloader)
-    #    print(f"num_workers: {num_workers}, Time taken: {duration:.2f} seconds")
-    #
-    #benchmark_dataloader(dataloader, num_batches=64)
+        targets.append(directory)
     
+    return targets
+    
+def pickle_save(final_image, final_target, save_images_path, save_targets_path, index, split='train' ):
+    if split == 'train':
+        # Create the directory in the blackhole path if it doesn't exist
+        os.makedirs(save_images_path, exist_ok=True)
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_images_path, f'train_image_{index}.pkl'), 'wb') as f:
+            pk.dump(final_image, f)
+        with open(os.path.join(save_targets_path, f'train_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+
+    elif split == 'val':
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_targets_path, f'val_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+    elif split == 'test':
+        os.makedirs(save_targets_path, exist_ok=True)
+
+        # Save the files to the BLACKHOLE path
+        with open(os.path.join(save_targets_path, f'test_target_{index}.pkl'), 'wb') as f:
+            pk.dump(final_target, f)
+
+
+def class_balance(proposal_images, proposal_targets, seed, count):
+    # Initialize lists for the proposals and targets
+    class_1_proposals = []
+    class_1_targets = []
+    class_0_proposals = []
+    class_0_targets = []
+    
+    random.seed(seed)
+    # Loop through each proposal and target
+    for image, target in zip(proposal_images, proposal_targets):
+        if int(target['label']) == 1:  # Assuming 'labels' is the correct key
+            class_1_proposals.append(image)
+            class_1_targets.append(target)
+        else:
+            class_0_proposals.append(image)
+            class_0_targets.append(target)                
+
+    # Class balancing
+    total_class_1 = len(class_1_proposals)   # 25 % of the class 0 proposals
+    total_class_0_ideal = int(total_class_1 * 3)     # 75 % of the class 0 proposals 
+    total_class_0 = len(class_0_proposals)
+
+    # If the number of class 0 proposals is greater than the ideal number of class 0 proposals
+    if total_class_0 > total_class_0_ideal:
+        # Randomly sample the indices of the class 0 proposals to keep 
+        indicies = random.sample(range(total_class_0), total_class_0_ideal)
+        # Create new lists of class 0 proposals and targets with the sampled indices
+        class_0_proposals_new = [class_0_proposals[i] for i in indicies]
+        class_0_targets_new = [class_0_targets[i] for i in indicies]
+    else:
+        class_0_proposals_new = class_0_proposals
+        class_0_targets_new = class_0_targets
+        
+    # sanity check that the ideal and the new class 0 proposals are the same
+    assert len(class_0_proposals_new) == total_class_0_ideal, \
+        f"Expected {total_class_0_ideal} class 0 proposals, but got {len(class_0_proposals_new)}"
+
+    # Combine the class 0 and class 1 proposals
+    image_proposals = class_0_proposals_new + class_1_proposals
+    image_targets = class_0_targets_new + class_1_targets
+
+    if image_proposals and image_targets:
+        # combine the proposals and targets and shuffle them
+        combined = list(zip(image_proposals, image_targets))
+        random.shuffle(combined)
+        image_proposals, image_targets = zip(*combined)
+
+        return image_proposals, image_targets
+    else:
+        print(f"No proposals and targets found for the image")
+        print(f"- Proposals generated in total: {len(proposal_images)}")
+        print(f"- Class 0 proposals: {len(class_0_proposals)}")
+        print(f"- Class 1 proposals: {len(class_1_proposals)}")
+
+        return None, None
+    
+def save_ground_truth(ground_truth_path, original_targets):
+    with open(ground_truth_path, 'wb') as f:
+        pk.dump(original_targets, f)
+
+import matplotlib.patches as patches
+
+def plot_original_and_crops(original_image, ground_truth, cropped_images, n=5):
+    """
+    Plots the original image with ground truth bounding boxes and n cropped images.
+    
+    Parameters:
+    - original_image: PIL.Image.Image, the original image.
+    - ground_truth: list of TensorDicts, each containing 'xmin', 'ymin', 'xmax', 'ymax', and optionally 'labels'.
+    - cropped_images: list of transformed proposal images (torch.Tensor).
+    - n: int, number of cropped images to display.
+    """
+    # Convert PIL image to NumPy array for plotting
+    original_image_np = np.array(original_image)
+    
+    # Determine the number of cropped images to display
+    n_crops = min(n, len(cropped_images))
+    
+    # Create subplots: 1 for original image with ground truth, and n for cropped images
+    fig, axes = plt.subplots(1, n + 1, figsize=(15, 5))
+    
+    # Plot the original image
+    axes[0].imshow(original_image_np)
+    axes[0].set_title('Original Image with Ground Truth')
+    axes[0].axis('off')
+    
+    # Overlay ground truth bounding boxes
+    ax = axes[0]
+    for gt in ground_truth:
+        try:
+            xmin = gt['xmin'].item()
+            ymin = gt['ymin'].item()
+            xmax = gt['xmax'].item()
+            ymax = gt['ymax'].item()
+            label = gt['labels'].item() if 'labels' in gt.keys() else None
+            
+            # Create a Rectangle patch
+            rect = patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, 
+                                     linewidth=2, edgecolor='r', facecolor='none')
+            # Add the patch to the Axes
+            ax.add_patch(rect)
+            
+            # Optionally, add labels
+            #if label is not None:
+            #    ax.text(xmin, ymin - 5, f'Label: {label}', 
+            #            color='yellow', fontsize=8, 
+            #            bbox=dict(facecolor='red', alpha=0.5))
+        except Exception as e:
+            print(f"Error plotting ground truth box: {e}")
+    
+    # Plot the cropped images
+    for i in range(n_crops):
+        crop = cropped_images[i]
+        if isinstance(crop, torch.Tensor):
+            # Convert tensor to NumPy array
+            crop_np = crop.permute(1, 2, 0).numpy()
+            # Handle normalization if applied
+            # Example: If normalized with mean and std, you might need to unnormalize
+            # Assuming no normalization for simplicity
+            axes[i + 1].imshow(crop_np)
+            axes[i + 1].set_title(f'Crop {i + 1}')
+            axes[i + 1].axis('off')
+        else:
+            print(f"Crop {i + 1} is not a tensor.")
+    
+    plt.tight_layout()
+    plt.savefig('original_ground_truth_and_crops.svg', dpi=300)
+    plt.show()
+
+
+
+#if __name__ == "__main__":
+    #import time
+    #from torchvision import transforms
+
+    ## Define transformations
+    #transform = transforms.Compose([
+        #transforms.Resize((256, 256)),  # Adjusted size for typical CNN input
+        #transforms.ToTensor(),
+    #])
+
+    ## Initialize the validation dataset
+    #val_dataset = Val_and_test_data(
+        #transform=transform, 
+        #folder_path='Potholes', 
+        #blackhole_path=VAL_PROPOSALS
+    #)
+    
+    #print(f"Total images in dataset: {len(val_dataset)}")
+
+    ## Set batch size
+    #batch_size = 1  # Since each image can have up to 2000 proposals
+    
+    ## Initialize DataLoader
+    #val_loader = DataLoader(
+        #val_dataset,
+        #batch_size=batch_size,
+        #shuffle=True,
+        #collate_fn=val_test_collate_fn_cropped
+    #)
+
+    ## Start timer
+    #start_time = time.time()
+
+    ## Number of cropped images to display
+    #n_crops_to_display = 5  # Adjust as needed
+
+    #try:
+        ## Retrieve one batch
+        #batch = next(iter(val_loader))
+        #original_images, proposal_images_list, coords_list, image_ids, ground_truths = batch
+
+        #print(f"\nBatch contents:")
+        #print(f"Number of images: {len(original_images)}")
+        #print(f"Image IDs: {image_ids}")
+        #print(f"Number of proposals: {[len(proposals) for proposals in proposal_images_list]}")
+        #print(f"Number of ground truths: {len(ground_truths)}")
+        #print("-" * 50)
+
+        ## Plot the first image in the batch
+        #plot_original_and_crops(
+            #original_images[0], 
+            #ground_truths[0], 
+            #proposal_images_list[0], 
+            #n=n_crops_to_display
+        #)
+
+    #except Exception as e:
+        #print(f"An error occurred during processing: {e}")
+
+    ## End timer
+    #end_time = time.time()
+
+    ## Calculate elapsed time
+    #elapsed_time = end_time - start_time
+    #print(f"Total time to run the batch: {elapsed_time:.2f} seconds")

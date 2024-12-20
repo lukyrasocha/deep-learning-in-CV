@@ -1,0 +1,32 @@
+wandb: Using wandb-core as the SDK backend. Please refer to https://wandb.me/wandb-core for more information.
+wandb: Currently logged in as: lukyrasocha (02516-intro-to-dl-in-cv). Use `wandb login --relogin` to force relogin
+wandb: Tracking run with wandb version 0.18.5
+wandb: Run data is saved locally in /zhome/26/8/209207/02516-intro-to-dl-in-cv/poster-3-object-detection/wandb/run-20241119_154906-fym50air
+wandb: Run `wandb offline` to turn off syncing.
+wandb: Syncing run EXPERIMENT3Reg10
+wandb: ⭐️ View project at https://wandb.ai/02516-intro-to-dl-in-cv/object_detection
+wandb: 🚀 View run at https://wandb.ai/02516-intro-to-dl-in-cv/object_detection/runs/fym50air
+wandb:                                                                                
+wandb: 
+wandb: Run history:
+wandb:            epoch ▁▁▂▂▂▃▃▃▄▄▄▅▅▅▆▆▆▇▇▇██
+wandb:  train/bbox_loss █▅▅▅▄▄▄▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁
+wandb:   train/cls_loss █▆▅▅▄▄▄▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁
+wandb: train/total_loss █▆▅▅▄▄▄▃▃▃▃▂▂▂▂▂▂▁▁▁▁▁
+wandb:    val/bbox_loss █▆▅▅▃▃▃▄▃▆▃▂▁▂▂▂▄▄▃▂▁▁
+wandb:     val/cls_loss ▄▄▃▂▃▄▁▃▂▁▆▂▄▃▇▄▅▄▅▆▅█
+wandb:   val/total_loss █▆▅▄▄▄▂▄▂▄▅▁▃▂▆▃▆▅▅▅▃▆
+wandb: 
+wandb: Run summary:
+wandb:            epoch 22
+wandb:  train/bbox_loss 0.19646
+wandb:   train/cls_loss 0.06434
+wandb: train/total_loss 0.2608
+wandb:    val/bbox_loss 0.28735
+wandb:     val/cls_loss 0.15156
+wandb:   val/total_loss 0.43891
+wandb: 
+wandb: 🚀 View run EXPERIMENT3Reg10 at: https://wandb.ai/02516-intro-to-dl-in-cv/object_detection/runs/fym50air
+wandb: ⭐️ View project at: https://wandb.ai/02516-intro-to-dl-in-cv/object_detection
+wandb: Synced 5 W&B file(s), 0 media file(s), 0 artifact file(s) and 0 other file(s)
+wandb: Find logs at: ./wandb/run-20241119_154906-fym50air/logs
